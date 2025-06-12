@@ -1,0 +1,14 @@
+/* Hide by default */
+.navbar-links {
+  display: none;
+}
+
+/* Show on screens 768px and up */
+@media (min-width: 768px) {
+  .navbar-links {
+    display: flex;
+    gap: 2rem;
+    /* adjust as needed */
+    font-weight: 500;
+  }
+}

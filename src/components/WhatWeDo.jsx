@@ -30,7 +30,7 @@ const glowStyle = {
 
 const WhatWeDo = () => {
   return (
-    <section className="bg-[#E0F4EA] py-20 px-6">
+    <section className="bg-[#E0F4EA] py-20 px-6 scroll-element">
       <div className="max-w-7xl mx-auto text-center mb-14">
         <h2
           className="text-4xl md:text-5xl font-bold text-[#F4A261]"

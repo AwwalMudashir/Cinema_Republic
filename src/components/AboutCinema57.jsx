@@ -2,7 +2,7 @@ import React from 'react';
 
 const AboutCinema57 = () => {
   return (
-    <section className="w-full bg-[#F1FAEE] py-16 px-6">
+    <section className="w-full bg-[#F1FAEE] py-16 px-6 scroll-element">
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 items-center">
 
         {/* Text Section */}

@@ -46,7 +46,7 @@ const mediaItems = [
 
 const EventsGallery = () => {
   return (
-    <section className="bg-[#F1FAEE] py-16 px-6">
+    <section className="bg-[#F1FAEE] py-16 px-6 scroll-element">
       <div className="max-w-7xl mx-auto grid gap-6 sm:grid-cols-2 md:grid-cols-3">
         {mediaItems.map((item, idx) => (
           <div

@@ -6,7 +6,7 @@ const glowStyle = {
 
 const FinalCTA = () => {
   return (
-    <section className="bg-[#0D1B2A] py-20 px-6 text-center text-[#F1FAEE]">
+    <section className="bg-[#0D1B2A] scroll-element py-20 px-6 text-center text-[#F1FAEE]">
       <div className="max-w-3xl mx-auto">
         <h2
           className="text-4xl md:text-5xl font-bold text-[#F4A261] mb-6"

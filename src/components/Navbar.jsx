@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react'; // or Heroicons
 import { Link, useNavigate } from 'react-router-dom';
+import './components.css'
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -34,7 +35,7 @@ const Navbar = () => {
         </div>
 
         {/* Links - Desktop */}
-        <ul className="hidden md:flex gap-8 font-medium">
+        <ul className="navbar-links">
           <li
             className="text-[#F4A261] hover:text-white transition cursor-pointer"
             style={{ textShadow: '0 0 5px rgba(244, 162, 97, 0.6)' }}

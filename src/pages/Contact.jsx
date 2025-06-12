@@ -1,8 +1,9 @@
 import React from 'react';
+import './contact.css'
 
 const Contact = () => {
   return (
-    <section className="bg-[#F1FAEE] min-h-screen flex flex-col md:flex-row items-stretch">
+    <section className="contact-section">
       {/* Image Side */}
       <div className="md:w-1/2 w-full h-64 md:h-auto">
         <img

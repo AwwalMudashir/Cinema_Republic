@@ -2,30 +2,62 @@ import React from 'react';
 
 const Footer = () => {
   return (
-    <footer className="px-6 py-12" style={{ backgroundColor: '#0D1B2A', color: '#E9C46A' }}>
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 text-sm">
-
+    <footer
+      style={{
+        padding: '3rem 1.5rem',
+        backgroundColor: '#0D1B2A',
+        color: '#E9C46A',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: '80rem',
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr 1fr',
+          gap: '2.5rem',
+          fontSize: '0.875rem',
+        }}
+      >
         {/* Logo and Description */}
         <div>
-          <h2 className="text-2xl font-semibold mb-3" style={{ color: '#F4A261' }}>
+          <h2
+            style={{
+              fontSize: '2rem',
+              fontWeight: 600,
+              marginBottom: '0.75rem',
+              color: '#F4A261',
+            }}
+          >
             Cinema 57
           </h2>
           <p style={{ color: 'rgba(233, 196, 106, 0.8)' }}>
-            Experience Ghana's premier open-air cinema. Unique events. Local culture. Beach vibes.
+            Experience Ghana&apos;s premier open-air cinema. Unique events. Local culture. Beach vibes.
           </p>
         </div>
 
         {/* Navigation */}
         <div>
-          <h3 className="mb-3 font-semibold text-lg" style={{ color: '#F4A261' }}>
+          <h3
+            style={{
+              marginBottom: '0.75rem',
+              fontWeight: 600,
+              fontSize: '1.125rem',
+              color: '#F4A261',
+            }}
+          >
             Explore
           </h3>
-          <ul className="space-y-2">
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {['Home', 'About', 'Events', 'Contact'].map((item) => (
               <li
                 key={item}
-                className="cursor-pointer transition"
-                style={{ color: '#E9C46A' }}
+                style={{
+                  cursor: 'pointer',
+                  transition: 'color 0.2s',
+                  color: '#E9C46A',
+                  marginBottom: '0.5rem',
+                }}
                 onMouseOver={(e) => (e.target.style.color = '#F4A261')}
                 onMouseOut={(e) => (e.target.style.color = '#E9C46A')}
               >
@@ -37,15 +69,22 @@ const Footer = () => {
 
         {/* Contact Info */}
         <div>
-          <h3 className="mb-3 font-semibold text-lg" style={{ color: '#F4A261' }}>
+          <h3
+            style={{
+              marginBottom: '0.75rem',
+              fontWeight: 600,
+              fontSize: '1.125rem',
+              color: '#F4A261',
+            }}
+          >
             Contact
           </h3>
-          <ul className="space-y-2">
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             <li>
               Email:{' '}
               <a
                 href="mailto:events@cinema57.org"
-                style={{ color: '#E9C46A' }}
+                style={{ color: '#E9C46A', transition: 'color 0.2s' }}
                 onMouseOver={(e) => (e.target.style.color = '#F4A261')}
                 onMouseOut={(e) => (e.target.style.color = '#E9C46A')}
               >
@@ -56,7 +95,7 @@ const Footer = () => {
               Phone:{' '}
               <a
                 href="tel:+233244741756"
-                style={{ color: '#E9C46A' }}
+                style={{ color: '#E9C46A', transition: 'color 0.2s' }}
                 onMouseOver={(e) => (e.target.style.color = '#F4A261')}
                 onMouseOut={(e) => (e.target.style.color = '#E9C46A')}
               >
@@ -69,15 +108,22 @@ const Footer = () => {
 
         {/* Socials */}
         <div>
-          <h3 className="mb-3 font-semibold text-lg" style={{ color: '#F4A261' }}>
+          <h3
+            style={{
+              marginBottom: '0.75rem',
+              fontWeight: 600,
+              fontSize: '1.125rem',
+              color: '#F4A261',
+            }}
+          >
             Follow Us
           </h3>
-          <div className="flex gap-4">
+          <div style={{ display: 'flex', gap: '1rem' }}>
             <a
               href="https://instagram.com/cinema_57"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: '#E9C46A' }}
+              style={{ color: '#E9C46A', transition: 'color 0.2s' }}
               onMouseOver={(e) => (e.target.style.color = '#F4A261')}
               onMouseOut={(e) => (e.target.style.color = '#E9C46A')}
             >
@@ -89,8 +135,11 @@ const Footer = () => {
 
       {/* Footer Bottom */}
       <div
-        className="mt-10 pt-4 text-center text-xs"
         style={{
+          marginTop: '2.5rem',
+          paddingTop: '1rem',
+          textAlign: 'center',
+          fontSize: '0.75rem',
           borderTop: '1px solid rgba(233, 196, 106, 0.3)',
           color: 'rgba(233, 196, 106, 0.7)',
         }}

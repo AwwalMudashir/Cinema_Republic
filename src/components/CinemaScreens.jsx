@@ -23,7 +23,7 @@ const glowStyle = {
 
 const CinemaScreens = () => {
   return (
-    <section className="bg-[#F1FAEE] py-20 px-6">
+    <section className="bg-[#F1FAEE]  scroll-element py-20 px-6">
       <div className="max-w-7xl mx-auto text-center mb-16">
         <h2
           className="text-4xl md:text-5xl font-bold text-[#F4A261] mb-4"

@@ -2,7 +2,7 @@ import React from 'react';
 
 const VisionSection = () => {
   return (
-    <section className="w-full bg-[#E0F4EA] py-16 px-6">
+    <section className="w-full bg-[#E0F4EA] py-16 px-6 scroll-element">
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 items-center">
 
         {/* Text Section */}

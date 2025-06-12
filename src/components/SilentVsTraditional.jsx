@@ -21,7 +21,7 @@ const glowStyle = {
 
 const SilentVsTraditional = () => {
   return (
-    <section className="bg-gradient-to-b from-[#0D1B2A] to-[#060F1A] text-[#F1FAEE] px-6 py-20 relative overflow-hidden">
+    <section className="bg-gradient-to-b scroll-element from-[#0D1B2A] to-[#060F1A] text-[#F1FAEE] px-6 py-20 relative overflow-hidden">
       {/* Intro Title */}
       <div className="max-w-4xl mx-auto text-center mb-16">
         <h2 className="text-4xl md:text-5xl font-bold text-[#F4A261] mb-4" style={glowStyle}>

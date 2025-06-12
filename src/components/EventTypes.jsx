@@ -30,7 +30,7 @@ const events = [
 
 const EventTypes = () => {
   return (
-    <section className="w-full bg-[#0D1B2A] py-16 px-6">
+    <section className="w-full scroll-element bg-[#0D1B2A] py-16 px-6">
       <div className="max-w-7xl mx-auto text-center mb-12">
         <h2 className="text-3xl md:text-4xl font-bold text-[#F4A261] mb-4 [text-shadow:0_0_5px_rgba(244,162,97,0.6)]">Our Event Experiences</h2>
         <p className="text-[#F1FAEE] max-w-2xl mx-auto">

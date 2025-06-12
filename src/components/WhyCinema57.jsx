@@ -25,7 +25,7 @@ const glowStyle = {
 
 const WhyCinema57 = () => {
   return (
-    <section className="bg-[#0D1B2A] py-20 px-6">
+    <section className="bg-[#0D1B2A] py-20 px-6 scroll-element">
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
 
         {/* Text Section */}

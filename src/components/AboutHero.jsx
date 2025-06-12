@@ -7,7 +7,7 @@ const glowStyle = {
 
 const AboutHero = () => {
   return (
-    <section className="relative w-full h-screen overflow-hidden">
+    <section className="relative w-full h-screen overflow-hidden ">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img

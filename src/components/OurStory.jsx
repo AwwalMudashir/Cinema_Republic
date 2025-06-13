@@ -18,7 +18,7 @@ const OurStory = () => {
             Our Story
           </h2>
           <p className="text-[#0D1B2A]/80 text-lg leading-relaxed">
-            Cinema 57 was born from a desire to make film accessible beyond traditional theater walls.
+            Cinema Republic Limited was born from a desire to make film accessible beyond traditional theater walls.
             What began as an ambitious idea soon became a movement — a cultural experience that brings
             people together under the stars, across beaches, parks, and local communities throughout Ghana.
           </p>

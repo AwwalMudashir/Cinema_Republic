@@ -1,152 +1,142 @@
 import React from 'react';
 
+// Inline CSS for responsive footer
+const footerStyles = `
+.responsive-footer {
+  padding: 3rem 1.5rem;
+  background-color: #0D1B2A;
+  color: #E9C46A;
+}
+.responsive-footer-main {
+  max-width: 80rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  font-size: 0.95rem;
+}
+.responsive-footer h2 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #F4A261;
+}
+.responsive-footer h3 {
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #F4A261;
+}
+.responsive-footer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.responsive-footer li, .responsive-footer a {
+  color: #E9C46A;
+  transition: color 0.2s;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 1em;
+}
+.responsive-footer li:hover, .responsive-footer a:hover {
+  color: #F4A261;
+}
+.responsive-footer .footer-socials {
+  display: flex;
+  gap: 1rem;
+}
+.responsive-footer-bottom {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  border-top: 1px solid rgba(233, 196, 106, 0.3);
+  color: rgba(233, 196, 106, 0.7);
+}
+
+/* Responsive grid for footer columns */
+@media (min-width: 600px) {
+  .responsive-footer-main {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 900px) {
+  .responsive-footer-main {
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+  }
+}
+`;
+
 const Footer = () => {
   return (
-    <footer
-      style={{
-        padding: '3rem 1.5rem',
-        backgroundColor: '#0D1B2A',
-        color: '#E9C46A',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '80rem',
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 1fr',
-          gap: '2.5rem',
-          fontSize: '0.875rem',
-        }}
-      >
-        {/* Logo and Description */}
-        <div>
-          <h2
-            style={{
-              fontSize: '2rem',
-              fontWeight: 600,
-              marginBottom: '0.75rem',
-              color: '#F4A261',
-            }}
-          >
-            Cinema 57
-          </h2>
-          <p style={{ color: 'rgba(233, 196, 106, 0.8)' }}>
-            Experience Ghana&apos;s premier open-air cinema. Unique events. Local culture. Beach vibes.
-          </p>
-        </div>
+    <>
+      <style>{footerStyles}</style>
+      <footer className="responsive-footer">
+        <div className="responsive-footer-main">
+          {/* Logo and Description */}
+          <div>
+            <h2>Cinema 57</h2>
+            <p style={{ color: 'rgba(233, 196, 106, 0.8)' }}>
+              Experience Ghana&apos;s premier open-air cinema. Unique events. Local culture. Beach vibes.
+            </p>
+          </div>
 
-        {/* Navigation */}
-        <div>
-          <h3
-            style={{
-              marginBottom: '0.75rem',
-              fontWeight: 600,
-              fontSize: '1.125rem',
-              color: '#F4A261',
-            }}
-          >
-            Explore
-          </h3>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {['Home', 'About', 'Events', 'Contact'].map((item) => (
-              <li
-                key={item}
-                style={{
-                  cursor: 'pointer',
-                  transition: 'color 0.2s',
-                  color: '#E9C46A',
-                  marginBottom: '0.5rem',
-                }}
-                onMouseOver={(e) => (e.target.style.color = '#F4A261')}
-                onMouseOut={(e) => (e.target.style.color = '#E9C46A')}
-              >
-                {item}
+          {/* Navigation */}
+          <div>
+            <h3>Explore</h3>
+            <ul>
+              {['Home', 'About', 'Events', 'Contact'].map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact Info */}
+          <div>
+            <h3>Contact</h3>
+            <ul>
+              <li>
+                Email:{' '}
+                <a
+                  href="mailto:events@cinema57.org"
+                >
+                  events@cinema57.org
+                </a>
               </li>
-            ))}
-          </ul>
-        </div>
+              <li>
+                Phone:{' '}
+                <a
+                  href="tel:+233244741756"
+                >
+                  +233 244 741 756
+                </a>
+              </li>
+              <li>Accra, Ghana</li>
+            </ul>
+          </div>
 
-        {/* Contact Info */}
-        <div>
-          <h3
-            style={{
-              marginBottom: '0.75rem',
-              fontWeight: 600,
-              fontSize: '1.125rem',
-              color: '#F4A261',
-            }}
-          >
-            Contact
-          </h3>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            <li>
-              Email:{' '}
+          {/* Socials */}
+          <div>
+            <h3>Follow Us</h3>
+            <div className="footer-socials">
               <a
-                href="mailto:events@cinema57.org"
-                style={{ color: '#E9C46A', transition: 'color 0.2s' }}
-                onMouseOver={(e) => (e.target.style.color = '#F4A261')}
-                onMouseOut={(e) => (e.target.style.color = '#E9C46A')}
+                href="https://instagram.com/cinema_57"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                events@cinema57.org
+                @cinema_57
               </a>
-            </li>
-            <li>
-              Phone:{' '}
-              <a
-                href="tel:+233244741756"
-                style={{ color: '#E9C46A', transition: 'color 0.2s' }}
-                onMouseOver={(e) => (e.target.style.color = '#F4A261')}
-                onMouseOut={(e) => (e.target.style.color = '#E9C46A')}
-              >
-                +233 244 741 756
-              </a>
-            </li>
-            <li>Accra, Ghana</li>
-          </ul>
-        </div>
-
-        {/* Socials */}
-        <div>
-          <h3
-            style={{
-              marginBottom: '0.75rem',
-              fontWeight: 600,
-              fontSize: '1.125rem',
-              color: '#F4A261',
-            }}
-          >
-            Follow Us
-          </h3>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <a
-              href="https://instagram.com/cinema_57"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#E9C46A', transition: 'color 0.2s' }}
-              onMouseOver={(e) => (e.target.style.color = '#F4A261')}
-              onMouseOut={(e) => (e.target.style.color = '#E9C46A')}
-            >
-              @cinema_57
-            </a>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Footer Bottom */}
-      <div
-        style={{
-          marginTop: '2.5rem',
-          paddingTop: '1rem',
-          textAlign: 'center',
-          fontSize: '0.75rem',
-          borderTop: '1px solid rgba(233, 196, 106, 0.3)',
-          color: 'rgba(233, 196, 106, 0.7)',
-        }}
-      >
-        &copy; {new Date().getFullYear()} Cinema 57. All rights reserved.
-      </div>
-    </footer>
+        <div className="responsive-footer-bottom">
+          &copy; {new Date().getFullYear()} Cinema 57. All rights reserved.
+        </div>
+      </footer>
+    </>
   );
 };
 

@@ -41,6 +41,26 @@ const mediaItems = [
     src: '/bg_video1.mp4',
     caption: 'An Outdoor Cinema Experience at Festival of Lights. Brought to you by @cinema_57 , this cozy under-the-stars movie night features festive films ',
   },
+  {
+    type: 'video',
+    src: '/v1.mp4',
+    caption: 'A Demonstration of the setup of our outdoor cinema',
+  },
+  {
+    type: 'video',
+    src: '/v2.mp4',
+    caption: 'A Simple Demonstration of the p20 screen',
+  },
+  {
+    type: 'image',
+    src: '/p1.jpg',
+    caption: "Proudly backed by the founder's commitment to quality, this product reflects our dedication to excellence and customer satisfaction.",
+  },
+  {
+    type: 'image',
+    src: '/p2.jpg',
+    caption: "Proudly backed by the founder's commitment to quality, this product reflects our dedication to excellence and customer satisfaction.",
+  },
 
 ];
 

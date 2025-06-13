@@ -18,7 +18,7 @@ const PartnershipHero = () => {
           className="text-4xl md:text-6xl font-bold text-[#F4A261] mb-4"
           style={glowStyle}
         >
-          Partner With Cinema 57
+          Partner With Cinema Republic
         </h1>
         <p className="text-[#F1FAEE] text-lg md:text-xl max-w-2xl">
           Join us in creating unforgettable, culturally rooted cinema experiences for your guests and community.

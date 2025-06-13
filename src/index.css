@@ -13,3 +13,22 @@ span,
 small {
   font-family: 'Poppins', sans-serif;
 }
+
+.scroll-element {
+  opacity: 0;
+  transform: translateY(30px);
+  /* Start with an offset */
+  transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+}
+
+.scroll-element.visible {
+  opacity: 1;
+  transform: translateY(0);
+  /* Reset position for fade-in animation */
+}
+
+.scroll-element.scrolling-up {
+  opacity: 0;
+  transform: translateY(30px);
+  /* Reverse animation for fade-out */
+}

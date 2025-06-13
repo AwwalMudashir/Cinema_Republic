@@ -34,7 +34,7 @@ const WhyCinema57 = () => {
             className="text-4xl md:text-5xl font-bold text-[#F4A261] mb-10"
             style={glowStyle}
           >
-            Why Choose Cinema 57?
+            Why Choose Us?
           </h2>
 
           <div className="space-y-8">

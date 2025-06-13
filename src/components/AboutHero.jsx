@@ -12,7 +12,7 @@ const AboutHero = () => {
       <div className="absolute inset-0 z-0">
         <img
           src="/img1.jpg" // Replace with your actual image path
-          alt="Cinema 57 screening"
+          alt="Cinema Republic screening"
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-black/40 "></div> {/* Overlay */}

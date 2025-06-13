@@ -12,7 +12,7 @@ const VisionSection = () => {
           </h2>
           <p className="text-[#0D1B2A]/80 text-lg leading-relaxed">
             <span className="text-[#F4A261] font-semibold [text-shadow:0_0_5px_rgba(244,162,97,0.6)]">
-              Cinema 57
+              Cinema Republic Ltd
             </span>{' '}
             envisions a future where cinema breaks beyond walls — becoming a shared cultural
             ritual under open skies. Our goal is to blend immersive entertainment with local

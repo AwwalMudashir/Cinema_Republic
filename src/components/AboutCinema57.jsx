@@ -11,7 +11,7 @@ const AboutCinema57 = () => {
             Ghana’s Premier Open-Air Cinema
           </h2>
           <p className="text-[#0D1B2A]/80 text-lg leading-relaxed">
-            <span className="text-[#F4A261] font-semibold [text-shadow:0_0_5px_rgba(244,162,97,0.6)]">Cinema 57</span> brings the magic of movies to open skies —
+            <span className="text-[#F4A261] font-semibold [text-shadow:0_0_5px_rgba(244,162,97,0.6)]">Cinema Republic Ltd.</span> brings the magic of movies to open skies —
             offering immersive cinema experiences across Ghana. From serene beachfronts to
             vibrant community spaces, we specialize in creating unique moments under the stars.
           </p>
@@ -27,7 +27,7 @@ const AboutCinema57 = () => {
           {/* Replace with your image or video */}
           <img
             src="/img1.jpg"
-            alt="Cinema 57 at the beach"
+            alt="Cinema Republic at the beach"
             className="w-full h-full object-cover"
           />
         </div>

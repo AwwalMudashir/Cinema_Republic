@@ -10,7 +10,7 @@ const screens = [
   },
   {
     title: 'E-30 Screen',
-    image: '/e30.PNG', // Replace with your actual image path
+    image: '/e30.png', // Replace with your actual image path
     dimensions: '30ft wide × 17ft high',
     capacity: '1,500 blankets • 3,000 chairs • 9,000 standing',
     description: 'Ideal for large monthly events and high-profile screenings. More immersive with wide reach.',

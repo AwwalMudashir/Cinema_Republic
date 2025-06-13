@@ -22,7 +22,7 @@ const HeroSection = () => {
       <div className="absolute top-0 left-0 w-full h-full bg-black/50 flex flex-col justify-center items-center text-center px-6">
         <h1 className="text-4xl md:text-6xl font-bold text-[#F4A261] mb-4 drop-shadow-lg" style={{ textShadow: '0 0 5px rgba(244, 162, 97, 0.6)' }}>
           <BlurText
-            text="Cinema 57"
+            text="Cinema Republic Ltd."
             delay={150}
             animateBy="words"
             direction="top"

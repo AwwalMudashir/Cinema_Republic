@@ -3,7 +3,7 @@ import React from 'react';
 const reasons = [
   {
     title: 'Experience & Expertise',
-    text: 'Cinema 57 is a trusted leader in open-air cinema events across Ghana.',
+    text: 'Cinema Republic is a trusted leader in open-air cinema events across Ghana.',
   },
   {
     title: 'Marketing Support',

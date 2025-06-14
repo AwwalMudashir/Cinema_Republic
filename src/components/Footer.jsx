@@ -77,7 +77,7 @@ const Footer = () => {
         <div className="responsive-footer-main">
           {/* Logo and Description */}
           <div>
-            <h2>Cinema 57</h2>
+            <h2>Cinema Republic Ltd.</h2>
             <p style={{ color: 'rgba(233, 196, 106, 0.8)' }}>
               Experience Ghana&apos;s premier open-air cinema. Unique events. Local culture. Beach vibes.
             </p>
@@ -126,6 +126,7 @@ const Footer = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
+
                 @cinema_57
               </a>
             </div>
@@ -133,7 +134,7 @@ const Footer = () => {
         </div>
 
         <div className="responsive-footer-bottom">
-          &copy; {new Date().getFullYear()} Cinema 57. All rights reserved.
+          &copy; {new Date().getFullYear()} Cinema Republic Ltd. All rights reserved.
         </div>
       </footer>
     </>

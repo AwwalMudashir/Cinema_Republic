@@ -28,7 +28,7 @@ const EventsHero = () => {
           </FuzzyText>
         </h1>
         <p className="text-[#F1FAEE] text-lg md:text-xl max-w-2xl">
-          Relive our magical screenings across beaches, parks, and communities in Ghana.
+          Relive our magical screenings across beaches, parks, and communities.
         </p>
       </div>
     </section>

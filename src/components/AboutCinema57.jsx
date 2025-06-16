@@ -8,11 +8,11 @@ const AboutCinema57 = () => {
         {/* Text Section */}
         <div>
           <h2 className="text-3xl md:text-4xl font-bold text-[#0D1B2A] mb-4">
-            Ghana’s Premier Open-Air Cinema
+            Our Premier Open-Air Cinema
           </h2>
           <p className="text-[#0D1B2A]/80 text-lg leading-relaxed">
             <span className="text-[#F4A261] font-semibold [text-shadow:0_0_5px_rgba(244,162,97,0.6)]">Cinema Republic Ltd.</span> brings the magic of movies to open skies —
-            offering immersive cinema experiences across Ghana. From serene beachfronts to
+            offering immersive cinema experiences. From serene beachfronts to
             vibrant community spaces, we specialize in creating unique moments under the stars.
           </p>
           <p className="mt-4 text-[#0D1B2A]/80 text-lg leading-relaxed">

@@ -3,15 +3,15 @@ import React from 'react';
 const reasons = [
   {
     title: 'Experience & Expertise',
-    text: 'Cinema Republic is a trusted leader in open-air cinema events across Ghana.',
+    text: 'Cinema Republic is a trusted leader in open-air cinema events.',
   },
   {
     title: 'Marketing Support',
     text: 'We provide custom marketing materials including graphics, videos, and event content.',
   },
   {
-    title: 'Ghanaian Cinema Focus',
-    text: 'We proudly highlight local films and support Ghanaian storytellers.',
+    title: 'Cinema Focus',
+    text: 'We proudly highlight local films and support storytellers.',
   },
   {
     title: 'Quality Equipment',

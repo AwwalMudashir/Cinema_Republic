@@ -65,7 +65,7 @@ const SilentVsTraditional = () => {
           Powered by Cinewav 🚀
         </h3>
         <p className="text-[#F1FAEE]/80 text-base text-lg mt-2">
-          Cinema Republic Limited is the first in Ghana to use Cinewav — turning your phone into your cinema speaker.
+          Cinema Republic Limited is the first in Nigeria to use Cinewav — turning your phone into your cinema speaker.
         </p>
       </div>
 

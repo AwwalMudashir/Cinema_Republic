@@ -19,7 +19,7 @@ const VisionSection = () => {
             storytelling and community bonding.
           </p>
           <p className="mt-4 text-[#0D1B2A]/80 text-lg leading-relaxed">
-            We’re passionate about creating accessible experiences that spotlight Ghanaian
+            We’re passionate about creating accessible experiences that spotlight
             filmmakers, uplift local venues, and redefine how audiences connect through film.
           </p>
         </div>

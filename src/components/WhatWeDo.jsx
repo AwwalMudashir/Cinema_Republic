@@ -5,7 +5,7 @@ const services = [
   {
     icon: '🎬',
     title: 'Open-Air Screenings',
-    text: 'We host outdoor cinema experiences in stunning public and private spaces across Ghana.',
+    text: 'We host outdoor cinema experiences in stunning public and private spaces.',
   },
   {
     icon: '🎧',
@@ -20,7 +20,7 @@ const services = [
   {
     icon: '📽️',
     title: 'Cultural & Educational Films',
-    text: 'Cinema 57 showcases Ghanaian culture and supports the next generation of filmmakers.',
+    text: 'Cinema 57 showcases culture and supports the next generation of filmmakers.'
   },
 ];
 

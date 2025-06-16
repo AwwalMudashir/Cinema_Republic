@@ -18,7 +18,7 @@ const events = [
   },
   {
     title: 'Cultural Screenings',
-    description: 'Ghanaian stories, music, and heritage.',
+    description: 'Cultural stories, music, and heritage.',
     image: '/og_cultural.jpeg',
   },
   {

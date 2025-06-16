@@ -35,7 +35,7 @@ const AboutHero = () => {
 
         </h1>
         <p className="text-[#F1FAEE] text-lg md:text-xl max-w-2xl">
-          We're redefining entertainment across Ghana — one open sky, one local story, one unforgettable screening at a time.
+          We're redefining entertainment — one open sky, one local story, one unforgettable screening at a time.
         </p>
       </div>
     </section>

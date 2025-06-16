@@ -20,7 +20,7 @@ const OurStory = () => {
           <p className="text-[#0D1B2A]/80 text-lg leading-relaxed">
             Cinema Republic Limited was born from a desire to make film accessible beyond traditional theater walls.
             What began as an ambitious idea soon became a movement — a cultural experience that brings
-            people together under the stars, across beaches, parks, and local communities throughout Ghana.
+            people together under the stars, across beaches, parks, and local communities.
           </p>
           <p className="mt-4 text-[#0D1B2A]/80 text-lg leading-relaxed">
             We’re not just about movies. We’re about memories — creating spaces where families bond,

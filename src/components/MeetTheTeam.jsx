@@ -38,7 +38,7 @@ const MeetTheTeam = () => {
           Meet the Team
         </h2>
         <p className="text-[#0D1B2A]/80 mt-4 max-w-xl mx-auto text-lg">
-          The passionate people bringing open-air cinema to life across Ghana.
+          The passionate people bringing open-air cinema to life.
         </p>
       </div>
 

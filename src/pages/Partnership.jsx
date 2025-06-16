@@ -4,6 +4,7 @@ import VisionSection from '../components/VisionSection'
 import WhyPartner from '../components/WhyPartner'
 import HotelBenefits from '../components/HotelBenefits'
 import PartnershipCTA from '../components/PartnershipCTA'
+import CurrentPartners from '../components/CurrentPartners'
 
 const Partnership = () => {
   return (
@@ -12,6 +13,7 @@ const Partnership = () => {
       <VisionSection />
       <WhyPartner />
       <HotelBenefits />
+      <CurrentPartners />
       <PartnershipCTA />
     </div>
   )

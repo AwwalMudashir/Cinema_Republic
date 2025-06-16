@@ -79,7 +79,7 @@ const Footer = () => {
           <div>
             <h2>Cinema Republic Ltd.</h2>
             <p style={{ color: 'rgba(233, 196, 106, 0.8)' }}>
-              Experience Ghana&apos;s premier open-air cinema. Unique events. Local culture. Beach vibes.
+              Experience Our premier open-air cinema. Unique events. Local culture. Beach vibes.
             </p>
           </div>
 
@@ -113,7 +113,7 @@ const Footer = () => {
                   +233 244 741 756
                 </a>
               </li>
-              <li>Accra, Ghana</li>
+              <li>Nigeria</li>
             </ul>
           </div>
 

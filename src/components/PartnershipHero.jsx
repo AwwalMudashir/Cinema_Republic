@@ -8,7 +8,7 @@ const PartnershipHero = () => {
   return (
     <section className="relative w-full h-screen overflow-hidden">
       <img
-        src="/team.jpeg" // replace with your image
+        src="/our.jpeg" // replace with your image
         alt="Cinema partnership event"
         className="absolute inset-0 w-full h-full object-cover z-0"
       />

@@ -97,20 +97,20 @@ const Footer = () => {
           <div>
             <h3>Contact</h3>
             <ul>
-              <li>
+              {/* <li>
                 Email:{' '}
                 <a
                   href="mailto:events@cinema57.org"
                 >
                   events@cinema57.org
                 </a>
-              </li>
+              </li> */}
               <li>
                 Phone:{' '}
                 <a
-                  href="tel:+233244741756"
+                  href="tel:+2347036478493"
                 >
-                  +233 244 741 756
+                  +234 703 647 8493
                 </a>
               </li>
               <li>Nigeria</li>
@@ -121,13 +121,14 @@ const Footer = () => {
           <div>
             <h3>Follow Us</h3>
             <div className="footer-socials">
+              <i class="fa-brands fa-instagram" style={{ marginTop: '5px', marginRight: '-6px' }}></i>
               <a
-                href="https://instagram.com/cinema_57"
+                href="https://www.instagram.com/cinemarepublic_naija/"
                 target="_blank"
                 rel="noopener noreferrer"
               >
 
-                @cinema_57
+                @cinemarepublic_naija
               </a>
             </div>
           </div>

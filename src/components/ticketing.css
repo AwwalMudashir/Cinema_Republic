@@ -1,0 +1,305 @@
+:root {
+  --ticket-navy: #0b1725;
+  --ticket-ink: #102231;
+  --ticket-orange: #f4a261;
+  --ticket-gold: #e9c46a;
+  --ticket-cream: #f7f4ea;
+}
+
+.ticket-shell { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+.ticket-kicker { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; color: var(--ticket-gold); font-size: .72rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
+.ticket-kicker--dark { color: #b95f30; }
+.ticket-button { min-height: 50px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 999px; padding: 0 22px; font-family: 'Poppins', sans-serif; font-size: .86rem; font-weight: 700; text-decoration: none; cursor: pointer; transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease; }
+.ticket-button:hover { transform: translateY(-2px); }
+.ticket-button:focus-visible, .movie-filters button:focus-visible, .date-picker button:focus-visible, .time-picker button:focus-visible, .quantity-control button:focus-visible { outline: 3px solid rgba(244,162,97,.42); outline-offset: 3px; }
+.ticket-button--primary { color: #10202d; background: linear-gradient(135deg, var(--ticket-gold), var(--ticket-orange)); box-shadow: 0 12px 35px rgba(244,162,97,.26); }
+.ticket-button--glass { color: white; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.08); backdrop-filter: blur(12px); }
+
+.movie-card { min-width: 0; overflow: hidden; border: 1px solid rgba(13,27,42,.09); border-radius: 22px; background: white; box-shadow: 0 18px 50px rgba(13,27,42,.09); transition: transform 240ms ease, box-shadow 240ms ease; }
+.movie-card:hover { transform: translateY(-7px); box-shadow: 0 24px 60px rgba(13,27,42,.16); }
+.movie-card__art { position: relative; height: 390px; overflow: hidden; }
+.movie-card__art img { width: 100%; height: 100%; object-fit: cover; transition: transform 500ms ease; }
+.movie-card:hover .movie-card__art img { transform: scale(1.045); }
+.movie-card__shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,14,22,.05), rgba(5,14,22,.48)); }
+.movie-card__status, .movie-card__rating { position: absolute; top: 16px; padding: 7px 11px; border-radius: 999px; font: 700 .67rem/1 'Poppins',sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.movie-card__status { left: 16px; color: var(--ticket-ink); background: var(--ticket-gold); }
+.movie-card__rating { right: 16px; color: white; background: rgba(9,22,33,.68); backdrop-filter: blur(8px); }
+.movie-card__body { padding: 23px 24px 25px; }
+.movie-card__eyebrow { color: #b95f30; margin: 0 0 7px; font-size: .69rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.movie-card h3 { color: var(--ticket-ink); margin: 0; font-size: clamp(1.4rem,2vw,1.7rem); line-height: 1.15; }
+.movie-card__tagline { min-height: 44px; color: rgba(16,34,49,.7); margin: 9px 0 18px; font-size: .86rem; line-height: 1.55; }
+.movie-card__meta { display: flex; flex-wrap: wrap; gap: 10px 16px; padding-top: 16px; border-top: 1px solid rgba(13,27,42,.1); }
+.movie-card__meta span { display: flex; align-items: center; gap: 6px; color: rgba(16,34,49,.68); font-size: .75rem; font-weight: 500; }
+.movie-card__link { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; color: var(--ticket-ink); font: 700 .83rem 'Poppins',sans-serif; text-decoration: none; }
+.movie-card__link svg { color: #c66f3c; transition: transform 180ms ease; }
+.movie-card__link:hover svg { transform: translate(3px,-3px); }
+
+.ticket-preview { position: relative; overflow: hidden; padding: 105px 0 84px; color: white; background: var(--ticket-navy); }
+.ticket-preview::before { content: ''; position: absolute; inset: 0; opacity: .18; background-image: radial-gradient(rgba(255,255,255,.45) .8px,transparent .8px); background-size: 25px 25px; }
+.ticket-preview__glow { position: absolute; width: 390px; height: 390px; border-radius: 50%; filter: blur(90px); opacity: .13; }
+.ticket-preview__glow--one { top: -160px; left: -120px; background: var(--ticket-orange); }
+.ticket-preview__glow--two { right: -130px; bottom: -230px; background: #3ab795; }
+.ticket-preview__inner { position: relative; }
+.ticket-preview__intro { display: grid; grid-template-columns: 1fr .8fr; align-items: end; gap: 80px; margin-bottom: 44px; }
+.ticket-preview__intro h2 { max-width: 650px; margin: 0; font-size: clamp(2.5rem,5vw,4.7rem); line-height: .98; letter-spacing: -.035em; }
+.ticket-preview__copy > p { margin: 0 0 18px; color: rgba(241,250,238,.73); line-height: 1.75; }
+.ticket-text-link { display: inline-flex; align-items: center; gap: 8px; color: var(--ticket-orange); font: 700 .82rem 'Poppins',sans-serif; text-decoration: none; }
+.ticket-preview__grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+.ticket-preview .movie-card { border-color: rgba(255,255,255,.1); background: #102231; box-shadow: 0 20px 45px rgba(0,0,0,.25); }
+.ticket-preview .movie-card__art { height: 300px; }
+.ticket-preview .movie-card h3, .ticket-preview .movie-card__link { color: white; }
+.ticket-preview .movie-card__tagline, .ticket-preview .movie-card__meta span { color: rgba(241,250,238,.65); }
+.ticket-preview .movie-card__meta { border-color: rgba(255,255,255,.1); }
+.ticket-preview__promise { display: flex; justify-content: center; gap: 34px; flex-wrap: wrap; margin-top: 34px; color: rgba(241,250,238,.72); font: 500 .77rem 'Poppins',sans-serif; }
+.ticket-preview__promise span { display: inline-flex; align-items: center; gap: 7px; }
+.ticket-preview__promise svg { color: var(--ticket-gold); }
+
+.movies-page { color: var(--ticket-ink); background: var(--ticket-cream); }
+.movies-hero { position: relative; min-height: 760px; display: flex; align-items: flex-end; overflow: hidden; color: white; background: var(--ticket-navy); }
+.movies-hero__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 38%; filter: saturate(.9); }
+.movies-hero__overlay { position: absolute; inset: 0; background: linear-gradient(90deg,rgba(5,14,22,.96),rgba(5,14,22,.77) 45%,rgba(5,14,22,.36) 75%),linear-gradient(0deg,rgba(5,14,22,.9),transparent 55%); }
+.movies-hero__content { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 370px; align-items: end; gap: 70px; padding-top: 180px; padding-bottom: 82px; }
+.movies-hero__copy h1 { max-width: 760px; margin: 0; font-size: clamp(3.3rem,7vw,6.6rem); line-height: .91; letter-spacing: -.045em; }
+.movies-hero__copy h1 em { color: var(--ticket-orange); font-weight: 500; }
+.movies-hero__lede { max-width: 620px; margin: 25px 0 30px; color: rgba(255,255,255,.75); font-size: 1rem; line-height: 1.75; }
+.movies-hero__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.movies-hero__showcard { padding: 27px; border: 1px solid rgba(255,255,255,.2); border-radius: 22px; background: rgba(13,27,42,.58); backdrop-filter: blur(16px); box-shadow: 0 24px 65px rgba(0,0,0,.22); }
+.movies-hero__showcard > p { color: var(--ticket-gold); margin: 0 0 8px; font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.movies-hero__showcard h2 { margin: 0 0 22px; font-size: 1.7rem; }
+.movies-hero__showcard div { display: flex; gap: 10px; margin: 12px 0; color: rgba(255,255,255,.74); font: 400 .78rem/1.55 'Poppins',sans-serif; }
+.movies-hero__showcard svg { flex: none; color: var(--ticket-orange); }
+.movies-hero__showcard a { display: block; margin-top: 20px; padding: 13px; border-radius: 999px; color: var(--ticket-ink); background: var(--ticket-gold); text-align: center; font: 700 .79rem 'Poppins',sans-serif; text-decoration: none; }
+.movie-programme { padding: 100px 0 110px; scroll-margin-top: 80px; }
+.movie-programme__header { display: grid; grid-template-columns: 1fr .72fr; align-items: end; gap: 50px; margin-bottom: 38px; }
+.movie-programme__header h2 { margin: 0; font-size: clamp(2.5rem,5vw,4rem); line-height: 1; }
+.movie-programme__header > p { color: rgba(16,34,49,.68); line-height: 1.75; }
+.movie-filters { display: flex; gap: 9px; margin-bottom: 28px; overflow-x: auto; padding: 2px 2px 7px; }
+.movie-filters button { flex: none; padding: 10px 16px; border: 1px solid rgba(13,27,42,.14); border-radius: 999px; color: rgba(16,34,49,.7); background: transparent; font: 600 .75rem 'Poppins',sans-serif; cursor: pointer; }
+.movie-filters button.active { color: white; border-color: var(--ticket-ink); background: var(--ticket-ink); }
+.movie-programme__grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+.booking-steps { padding: 95px 0; color: white; background: var(--ticket-navy); }
+.booking-steps__heading { display: flex; justify-content: space-between; gap: 30px; align-items: end; margin-bottom: 45px; }
+.booking-steps__heading h2 { max-width: 700px; margin: 0; font-size: clamp(2.4rem,4vw,3.8rem); line-height: 1; }
+.booking-steps__grid { display: grid; grid-template-columns: repeat(3,1fr); border-block: 1px solid rgba(255,255,255,.12); }
+.booking-steps__grid article { padding: 33px 30px 37px 0; }
+.booking-steps__grid article + article { padding-left: 30px; border-left: 1px solid rgba(255,255,255,.12); }
+.booking-steps__grid span { color: var(--ticket-orange); font: 700 .69rem 'Poppins',sans-serif; }
+.booking-steps__grid h3 { margin: 12px 0 7px; font-size: 1.45rem; }
+.booking-steps__grid p { margin: 0; color: rgba(255,255,255,.6); font-size: .83rem; line-height: 1.6; }
+.booking-steps__note { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 27px; color: rgba(255,255,255,.7); font: 500 .78rem 'Poppins',sans-serif; }
+.booking-steps__note svg { color: var(--ticket-gold); }
+
+.booking-page { min-height: 100vh; color: var(--ticket-ink); background: #f4f1e8; }
+.booking-cover { position: relative; height: 510px; overflow: hidden; color: white; background: var(--ticket-navy); }
+.booking-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 35%; filter: saturate(.85); }
+.booking-cover__veil { position: absolute; inset: 0; background: linear-gradient(90deg,rgba(5,14,22,.97),rgba(5,14,22,.63) 58%,rgba(5,14,22,.28)),linear-gradient(0deg,rgba(5,14,22,.83),transparent 55%); }
+.booking-cover__content { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding-top: 110px; padding-bottom: 58px; }
+.booking-back { display: inline-flex; width: fit-content; align-items: center; gap: 7px; color: rgba(255,255,255,.72); font: 600 .76rem 'Poppins',sans-serif; text-decoration: none; }
+.booking-cover h1 { max-width: 760px; margin: 0 0 8px; font-size: clamp(3.1rem,7vw,6rem); line-height: .92; letter-spacing: -.04em; }
+.booking-cover__content > div > p:not(.ticket-kicker) { color: rgba(255,255,255,.74); }
+.booking-cover__meta { display: flex; gap: 8px; margin-top: 20px; }
+.booking-cover__meta span { padding: 7px 11px; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; background: rgba(255,255,255,.08); font-size: .68rem; font-weight: 600; }
+.booking-workspace { padding: 0 0 100px; }
+.booking-progress { position: relative; z-index: 2; display: flex; justify-content: center; gap: 8px; width: fit-content; margin: -23px auto 58px; padding: 8px; border: 1px solid rgba(13,27,42,.08); border-radius: 999px; background: white; box-shadow: 0 15px 45px rgba(13,27,42,.11); }
+.booking-progress span { display: flex; align-items: center; gap: 8px; padding: 6px 14px; color: rgba(16,34,49,.52); font: 600 .72rem 'Poppins',sans-serif; }
+.booking-progress i { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; background: #edf0ee; font-style: normal; }
+.booking-progress .active { color: var(--ticket-ink); }
+.booking-progress .active i { color: var(--ticket-ink); background: var(--ticket-gold); }
+.booking-layout { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 30px; align-items: start; }
+.booking-panels { display: grid; gap: 18px; }
+.booking-panel { padding: 34px; border: 1px solid rgba(13,27,42,.08); border-radius: 22px; background: white; box-shadow: 0 12px 35px rgba(13,27,42,.055); }
+.booking-panel__heading { display: flex; gap: 16px; margin-bottom: 26px; }
+.booking-panel__heading > span { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: var(--ticket-ink); background: #f7e4c7; font: 700 .69rem 'Poppins',sans-serif; }
+.booking-panel__heading h2 { margin: 0 0 3px; font-size: 1.45rem; }
+.booking-panel__heading p { margin: 0; color: rgba(16,34,49,.55); font-size: .76rem; }
+.date-picker { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.date-picker button { position: relative; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(13,27,42,.12); border-radius: 16px; color: var(--ticket-ink); background: #fbfcfa; font-family: 'Poppins',sans-serif; cursor: pointer; }
+.date-picker button small { color: rgba(16,34,49,.56); font-size: .68rem; text-transform: uppercase; }
+.date-picker button strong { font-size: 1.45rem; line-height: 1.2; }
+.date-picker button span { font-size: .69rem; text-transform: uppercase; }
+.date-picker button svg { position: absolute; top: 9px; right: 9px; padding: 2px; border-radius: 50%; background: var(--ticket-gold); }
+.date-picker button.active { border-color: #c87a49; background: #fff7ec; box-shadow: inset 0 0 0 1px #c87a49; }
+.time-picker { display: flex; gap: 10px; margin-top: 13px; }
+.time-picker button { display: flex; align-items: center; gap: 7px; padding: 12px 17px; border: 1px solid rgba(13,27,42,.12); border-radius: 999px; color: rgba(16,34,49,.72); background: white; font: 600 .75rem 'Poppins',sans-serif; cursor: pointer; }
+.time-picker button.active { color: white; border-color: var(--ticket-ink); background: var(--ticket-ink); }
+.ticket-options { display: grid; }
+.ticket-option { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 25px; padding: 18px 0; border-top: 1px solid rgba(13,27,42,.08); }
+.ticket-option:first-child { border-top: 0; padding-top: 3px; }
+.ticket-option h3 { margin: 0 0 4px; font-family: 'Poppins',sans-serif; font-size: .9rem; }
+.ticket-option p { margin: 0; color: rgba(16,34,49,.54); font-size: .7rem; }
+.ticket-option > strong { font: 700 .83rem 'Poppins',sans-serif; }
+.quantity-control { display: grid; grid-template-columns: 32px 28px 32px; align-items: center; text-align: center; }
+.quantity-control button { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid rgba(13,27,42,.14); border-radius: 50%; color: var(--ticket-ink); background: #f7f7f3; cursor: pointer; }
+.quantity-control button:disabled { opacity: .35; cursor: not-allowed; }
+.quantity-control span { font-size: .8rem; font-weight: 700; }
+.customer-fields { display: grid; grid-template-columns: repeat(2,1fr); gap: 17px; }
+.field { display: grid; gap: 8px; color: var(--ticket-ink); font: 600 .72rem 'Poppins',sans-serif; }
+.field--wide { grid-column: 1/-1; }
+.field input { width: 100%; height: 48px; padding: 0 14px; border: 1px solid rgba(13,27,42,.14); border-radius: 11px; color: var(--ticket-ink); background: #fbfcfa; font: 400 .8rem 'Poppins',sans-serif; }
+.field input:focus { outline: 0; border-color: #cf7a45; box-shadow: 0 0 0 3px rgba(244,162,97,.16); }
+.order-summary { position: sticky; top: 100px; padding: 27px; border-radius: 22px; color: white; background: var(--ticket-navy); box-shadow: 0 22px 55px rgba(13,27,42,.18); }
+.order-summary__eyebrow { margin: 0 0 15px; color: var(--ticket-gold); font-size: .65rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.order-summary__movie { display: grid; grid-template-columns: 62px 1fr; gap: 13px; align-items: center; margin-bottom: 22px; }
+.order-summary__movie img { width: 62px; height: 76px; border-radius: 9px; object-fit: cover; }
+.order-summary__movie h2 { margin: 0 0 4px; font-size: 1.18rem; }
+.order-summary__movie p { margin: 0; color: rgba(255,255,255,.53); font-size: .66rem; }
+.order-summary__detail { display: grid; grid-template-columns: 20px 1fr; gap: 10px; margin: 13px 0; }
+.order-summary__detail svg { color: var(--ticket-orange); }
+.order-summary__detail div { display: grid; gap: 2px; }
+.order-summary__detail small { color: rgba(255,255,255,.47); font-size: .61rem; }
+.order-summary__detail strong { font: 500 .7rem/1.45 'Poppins',sans-serif; }
+.order-summary__line { height: 1px; margin: 21px 0; background: rgba(255,255,255,.12); }
+.order-summary__items { display: grid; gap: 10px; }
+.order-summary__items div { display: flex; justify-content: space-between; gap: 15px; font: 400 .7rem 'Poppins',sans-serif; }
+.order-summary__items p { margin: 0; color: rgba(255,255,255,.45); font-size: .7rem; }
+.order-summary__total { display: flex; justify-content: space-between; align-items: end; margin-top: 19px; padding-top: 17px; border-top: 1px dashed rgba(255,255,255,.2); }
+.order-summary__total span { font-size: .75rem; }
+.order-summary__total strong { color: var(--ticket-gold); font: 700 1.4rem 'Poppins',sans-serif; }
+.order-summary__fees { display: flex; gap: 6px; margin: 12px 0 18px; color: rgba(255,255,255,.48); font-size: .61rem; line-height: 1.5; }
+.order-summary__fees svg { flex: none; }
+.ticket-button--pay { width: 100%; color: var(--ticket-ink); background: linear-gradient(135deg,var(--ticket-gold),var(--ticket-orange)); }
+.order-summary__secure { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 12px 0 0; color: rgba(255,255,255,.55); font-size: .6rem; }
+.booking-error { margin: 0 0 12px; padding: 9px 11px; border-radius: 8px; color: #ffe8dc; background: rgba(231,111,81,.18); font-size: .67rem; line-height: 1.5; }
+.checkout-modal { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 20px; }
+.checkout-modal__backdrop { position: absolute; inset: 0; border: 0; background: rgba(5,14,22,.78); backdrop-filter: blur(8px); cursor: pointer; }
+.checkout-modal__card { position: relative; width: min(480px,100%); padding: 38px; border-radius: 25px; background: var(--ticket-cream); box-shadow: 0 35px 90px rgba(0,0,0,.35); text-align: center; }
+.checkout-modal__close { position: absolute; top: 15px; right: 15px; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; color: var(--ticket-ink); background: rgba(13,27,42,.07); cursor: pointer; }
+.checkout-modal__icon { width: 67px; height: 67px; display: grid; place-items: center; margin: 0 auto 20px; border-radius: 50%; color: var(--ticket-ink); background: var(--ticket-gold); transform: rotate(-8deg); }
+.checkout-modal .ticket-kicker { justify-content: center; }
+.checkout-modal h2 { margin: 0 0 13px; color: var(--ticket-ink); font-size: 2rem; line-height: 1.08; }
+.checkout-modal__card > p:not(.ticket-kicker) { color: rgba(16,34,49,.65); font-size: .81rem; line-height: 1.7; }
+.checkout-modal__summary { display: flex; justify-content: space-between; margin: 23px 0; padding: 15px 0; border-block: 1px solid rgba(13,27,42,.1); font: 600 .8rem 'Poppins',sans-serif; }
+.checkout-modal__card > .ticket-button { width: 100%; }
+.booking-not-found { min-height: 78vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 120px 20px 60px; color: var(--ticket-ink); background: var(--ticket-cream); text-align: center; }
+.booking-not-found svg { color: #c66f3c; }
+.booking-not-found h1 { margin: 20px 0 8px; font-size: clamp(2rem,5vw,3.5rem); }
+.booking-not-found p { margin: 0 0 24px; color: rgba(16,34,49,.62); }
+
+.programme-feedback { grid-column: 1/-1; margin: 0; padding: 24px; border: 1px solid rgba(255,255,255,.18); border-radius: 16px; color: inherit; background: rgba(255,255,255,.08); font-size: .85rem; }
+.movie-programme .programme-feedback { color: var(--ticket-ink); background: white; border-color: rgba(13,27,42,.1); }
+.showtime-venue { display: flex; gap: 8px; align-items: center; margin: 20px 0 0; color: rgba(16,34,49,.6); font-size: .78rem; }
+.showtime-venue svg { color: #c66f3c; }
+.ticket-button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+.flow-page { position: relative; min-height: 100vh; padding-bottom: 110px; color: var(--ticket-ink); background: var(--ticket-cream); }
+.flow-hero { min-height: 380px; padding-top: 155px; padding-bottom: 90px; color: white; }
+.flow-page::before { content: ''; position: absolute; z-index: 0; top: 0; left: 0; right: 0; height: 440px; background: radial-gradient(circle at 80% 20%,rgba(244,162,97,.22),transparent 30%),linear-gradient(135deg,#08131f,#102b3a); pointer-events: none; }
+.flow-page > * { position: relative; z-index: 1; }
+.flow-hero h1 { max-width: 790px; margin: 0 0 17px; font-size: clamp(2.8rem,6vw,5.7rem); line-height: .98; letter-spacing: -.045em; }
+.flow-hero > p:last-child { max-width: 620px; margin: 0; color: rgba(255,255,255,.72); line-height: 1.65; }
+.flow-content { margin-top: -38px; }
+.flow-card { width: min(680px,100%); padding: 36px; border: 1px solid rgba(13,27,42,.09); border-radius: 24px; background: white; box-shadow: 0 24px 70px rgba(13,27,42,.13); }
+.flow-card h2 { margin: 15px 0 10px; font-size: clamp(1.6rem,3vw,2.25rem); }
+.flow-card > p { color: rgba(16,34,49,.68); font-size: .86rem; line-height: 1.65; }
+.flow-icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 18px; color: #b8683b; background: #fff0df; }
+.flow-icon--success { color: #12704e; background: #e0f4e8; }
+.flow-reference { overflow-wrap: anywhere; }
+.flow-warning { padding: 12px 14px; border-radius: 12px; color: #8a332d !important; background: #fff0e8; font-size: .82rem; }
+.flow-ticket-list { display: grid; gap: 10px; margin: 24px 0; }
+.flow-ticket-link { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid rgba(16,34,49,.1); border-radius: 14px; color: var(--ticket-ink); text-decoration: none; }
+.flow-ticket-link:hover { border-color: #c66f3c; background: #fff8ed; }
+.flow-ticket-link svg { flex: none; color: #c66f3c; }
+.flow-ticket-link span { display: grid; gap: 3px; min-width: 0; }
+.flow-ticket-link small { color: rgba(16,34,49,.54); overflow-wrap: anywhere; }
+
+.digital-ticket { display: grid; grid-template-columns: minmax(180px,300px) minmax(0,1fr); width: min(960px,100%); overflow: hidden; border-radius: 27px; background: white; box-shadow: 0 24px 70px rgba(13,27,42,.15); }
+.digital-ticket__art { position: relative; min-height: 100%; background: linear-gradient(150deg,#102231,#e76f51); }
+.digital-ticket__art img { width: 100%; height: 100%; object-fit: cover; }
+.digital-ticket__art span { position: absolute; top: 20px; left: 20px; padding: 8px 12px; border-radius: 999px; color: #102231; background: var(--ticket-gold); font-size: .73rem; font-weight: 700; }
+.digital-ticket__body { padding: 36px 42px; }
+.digital-ticket__body h2 { margin: 0 0 8px; font-size: clamp(2rem,4vw,3.4rem); line-height: 1.05; }
+.ticket-state { width: fit-content; margin: 14px 0 23px; padding: 8px 12px; border-radius: 999px; color: #13734e; background: #e0f4e8; font-size: .75rem; font-weight: 700; }
+.ticket-state:not(.ticket-state--valid) { color: #8a332d; background: #fff0e8; }
+.ticket-state--not_yet_valid { color: #9b5c20 !important; background: #fff2da !important; }
+.digital-ticket__details { display: grid; gap: 13px; padding: 20px 0; border-block: 1px solid rgba(16,34,49,.12); }
+.digital-ticket__details p { display: flex; align-items: start; gap: 10px; margin: 0; color: rgba(16,34,49,.76); font-size: .86rem; line-height: 1.55; }
+.digital-ticket__details svg { flex: none; color: #bd6639; }
+.digital-ticket__qr { display: grid; justify-items: center; margin: 24px 0 18px; }
+.digital-ticket__qr img { width: min(280px,100%); aspect-ratio: 1; }
+.digital-ticket__qr p { margin: 0; color: rgba(16,34,49,.58); font-size: .72rem; }
+.digital-ticket__code { display: grid; gap: 5px; padding: 16px; border: 1px dashed rgba(16,34,49,.22); border-radius: 12px; text-align: center; }
+.digital-ticket__code small { color: rgba(16,34,49,.5); text-transform: uppercase; letter-spacing: .12em; }
+.digital-ticket__code strong { font: 600 .8rem 'Poppins',sans-serif; overflow-wrap: anywhere; }
+.digital-ticket__foot { display: flex; gap: 7px; align-items: start; margin-top: 20px; color: rgba(16,34,49,.54); font-size: .7rem; line-height: 1.55; }
+.digital-ticket__foot svg { flex: none; }
+
+.gate-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px; }
+.gate-grid .flow-card { width: 100%; }
+.gate-card-heading { display: flex; justify-content: space-between; align-items: start; }
+.gate-sign-out { display: flex; align-items: center; gap: 6px; border: 0; color: #9b5230; background: none; cursor: pointer; font: 600 .76rem 'Poppins',sans-serif; }
+.gate-scanner label, .gate-login label { display: grid; gap: 6px; margin: 17px 0; color: var(--ticket-ink); font-size: .75rem; font-weight: 700; }
+.gate-scanner input, .gate-login input { width: 100%; min-height: 48px; padding: 12px 14px; border: 1px solid rgba(16,34,49,.2); border-radius: 11px; background: #fbfcfa; color: var(--ticket-ink); font: 400 .85rem 'Poppins',sans-serif; }
+.gate-scanner input:focus-visible, .gate-login input:focus-visible { outline: 3px solid rgba(244,162,97,.42); outline-offset: 2px; }
+.gate-login .ticket-button { width: 100%; }
+.gate-video { display: none; width: 100%; aspect-ratio: 4/3; margin: 18px 0; border-radius: 14px; object-fit: cover; background: #102231; }
+.gate-video--active { display: block; }
+.gate-camera-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.gate-hint { margin: 10px 0; color: #a95735; font-size: .73rem; }
+.gate-verify-button, .gate-redeem-button { width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 12px; color: white; background: var(--ticket-ink); cursor: pointer; font: 700 .86rem 'Poppins',sans-serif; }
+.gate-redeem-button { margin-top: 22px; color: var(--ticket-ink); background: linear-gradient(135deg,var(--ticket-gold),var(--ticket-orange)); }
+.gate-verify-button:disabled, .gate-redeem-button:disabled { opacity: .55; cursor: not-allowed; }
+.gate-empty { display: grid; justify-items: center; align-content: center; min-height: 310px; text-align: center; }
+.gate-empty svg { color: #b8683b; }
+.gate-empty p { max-width: 280px; color: rgba(16,34,49,.6); font-size: .82rem; }
+.gate-success { padding: 12px 14px; border-radius: 12px; color: #13734e !important; background: #e0f4e8; font-size: .82rem; }
+.gate-ticket-details { display: flex; gap: 15px; align-items: center; margin: 24px 0; padding-bottom: 18px; border-bottom: 1px solid rgba(16,34,49,.12); }
+.gate-ticket-details img { width: 68px; height: 84px; border-radius: 8px; object-fit: cover; }
+.gate-ticket-details h3 { margin: 0 0 3px; font-size: 1.22rem; }
+.gate-ticket-details p { margin: 0; color: rgba(16,34,49,.55); font-size: .75rem; }
+.gate-detail { display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid rgba(16,34,49,.08); padding: 10px 0; font-size: .76rem; }
+.gate-detail strong { flex: none; }
+.gate-detail span { text-align: right; }
+.gate-code { overflow-wrap: anywhere; color: rgba(16,34,49,.45); font: 500 .68rem 'Poppins',sans-serif; }
+
+@media (max-width: 760px) {
+  .flow-hero { padding-top: 125px; }
+  .flow-card { padding: 25px; }
+  .digital-ticket { grid-template-columns: 1fr; }
+  .digital-ticket__art { height: 220px; }
+  .digital-ticket__body { padding: 28px 23px; }
+  .gate-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .ticket-preview__intro, .movies-hero__content, .movie-programme__header, .booking-layout { grid-template-columns: 1fr; }
+  .ticket-preview__intro { gap: 24px; }
+  .ticket-preview__grid, .movie-programme__grid { grid-template-columns: repeat(2,1fr); }
+  .movies-hero__showcard { display: none; }
+  .booking-steps__grid { grid-template-columns: 1fr; }
+  .booking-steps__grid article + article { padding-left: 0; border-left: 0; border-top: 1px solid rgba(255,255,255,.12); }
+  .order-summary { position: static; }
+}
+
+@media (max-width: 620px) {
+  .ticket-shell { width: min(100% - 28px,1180px); }
+  .ticket-preview { padding: 80px 0 64px; }
+  .ticket-preview__grid, .movie-programme__grid { grid-template-columns: 1fr; }
+  .ticket-preview .movie-card:nth-child(n+3) { display: none; }
+  .movie-card__art { height: 360px; }
+  .ticket-preview .movie-card__art { height: 320px; }
+  .ticket-preview__promise { justify-content: flex-start; gap: 13px 25px; }
+  .movies-hero { min-height: 690px; }
+  .movies-hero__content { padding-top: 150px; padding-bottom: 60px; }
+  .movies-hero__copy h1 { font-size: clamp(3.05rem,15vw,4.4rem); }
+  .movies-hero__lede { font-size: .88rem; }
+  .movies-hero__actions .ticket-button { width: 100%; }
+  .movie-programme, .booking-steps { padding: 75px 0; }
+  .booking-steps__heading { display: block; }
+  .booking-cover { height: 480px; }
+  .booking-cover__content { padding-top: 95px; }
+  .booking-progress { width: 100%; justify-content: space-between; margin-bottom: 32px; overflow: hidden; }
+  .booking-progress span { gap: 5px; padding: 5px; font-size: .6rem; }
+  .booking-progress i { width: 22px; height: 22px; }
+  .booking-panel { padding: 25px 19px; }
+  .date-picker { gap: 7px; }
+  .date-picker button { min-height: 94px; }
+  .time-picker { flex-wrap: wrap; }
+  .ticket-option { grid-template-columns: 1fr auto; gap: 9px 15px; }
+  .quantity-control { grid-column: 1/-1; justify-self: end; }
+  .customer-fields { grid-template-columns: 1fr; }
+  .field--wide { grid-column: auto; }
+  .order-summary { padding: 24px 20px; }
+  .checkout-modal__card { padding: 34px 22px 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) { .movie-card, .movie-card__art img, .ticket-button { transition: none; } }

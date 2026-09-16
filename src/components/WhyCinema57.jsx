@@ -1,21 +1,26 @@
 import React from 'react';
+import { Award, Clapperboard, Megaphone, Projector } from 'lucide-react';
 
 const reasons = [
   {
     title: 'Experience & Expertise',
     text: 'Cinema Republic is a trusted leader in open-air cinema events.',
+    icon: Award,
   },
   {
     title: 'Marketing Support',
     text: 'We provide custom marketing materials including graphics, videos, and event content.',
+    icon: Megaphone,
   },
   {
     title: 'Cinema Focus',
     text: 'We proudly highlight local films and support storytellers.',
+    icon: Clapperboard,
   },
   {
     title: 'Quality Equipment',
     text: 'Our setups include professional-grade audio-visual equipment for the best viewer experience.',
+    icon: Projector,
   },
 ];
 
@@ -38,14 +43,19 @@ const WhyCinema57 = () => {
           </h2>
 
           <div className="space-y-8">
-            {reasons.map((reason, idx) => (
-              <div key={idx}>
+            {reasons.map((reason, idx) => {
+              const Icon = reason.icon;
+              return (
+              <div key={idx} className="icon-copy-row">
+                <div className="feature-icon feature-icon--dark"><Icon size={20} strokeWidth={1.8} /></div>
+                <div>
                 <h3 className="text-xl font-semibold text-[#E9C46A] mb-1">
                   {reason.title}
                 </h3>
                 <p className="text-[#F1FAEE]/80 text-base">{reason.text}</p>
+                </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
 

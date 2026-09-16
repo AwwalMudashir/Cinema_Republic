@@ -1,24 +1,27 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Clapperboard, Handshake, Headphones, Projector } from 'lucide-react';
+
+const MotionDiv = motion.div;
 
 const services = [
   {
-    icon: '🎬',
+    icon: Clapperboard,
     title: 'Open-Air Screenings',
     text: 'We host outdoor cinema experiences in stunning public and private spaces.',
   },
   {
-    icon: '🎧',
+    icon: Headphones,
     title: 'Silent Cinema (Cinewav)',
     text: 'Guests enjoy personal audio through their phones, powered by Cinewav’s groundbreaking tech.',
   },
   {
-    icon: '🎟️',
+    icon: Handshake,
     title: 'Event Partnerships',
     text: 'We partner with venues, festivals, and brands to create unforgettable cinematic events.',
   },
   {
-    icon: '📽️',
+    icon: Projector,
     title: 'Cultural & Educational Films',
     text: 'Cinema 57 showcases culture and supports the next generation of filmmakers.'
   },
@@ -46,9 +49,10 @@ const WhatWeDo = () => {
       <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
         {services.map((service, idx) => {
           const slideInDirection = idx % 2 === 0 ? -100 : 100; // Alternate left/right
+          const Icon = service.icon;
 
           return (
-            <motion.div
+            <MotionDiv
               key={idx}
               className="bg-white rounded-xl p-6 shadow-md"
               initial={{ opacity: 0, x: slideInDirection }}
@@ -56,10 +60,10 @@ const WhatWeDo = () => {
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.6, ease: 'easeOut' }}
             >
-              <div className="text-4xl mb-3">{service.icon}</div>
+              <div className="feature-icon feature-icon--light"><Icon size={23} strokeWidth={1.8} /></div>
               <h3 className="text-xl font-semibold text-[#0D1B2A] mb-2">{service.title}</h3>
               <p className="text-[#0D1B2A]/80">{service.text}</p>
-            </motion.div>
+            </MotionDiv>
           );
         })}
       </div>

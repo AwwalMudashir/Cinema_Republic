@@ -1,10 +1,11 @@
 import React from 'react';
+import { CalendarHeart, Share2, TrendingUp, UtensilsCrossed } from 'lucide-react';
 
 const benefits = [
-  "Increased foot traffic through recurring weekly events",
-  "Opportunities to promote hotel services, restaurants & amenities",
-  "Higher visibility on social media through shared event coverage",
-  "Tailored themes for holidays, cultural nights & corporate events"
+  { text: 'Increased foot traffic through recurring weekly events', icon: TrendingUp },
+  { text: 'Opportunities to promote hotel services, restaurants & amenities', icon: UtensilsCrossed },
+  { text: 'Higher visibility on social media through shared event coverage', icon: Share2 },
+  { text: 'Tailored themes for holidays, cultural nights & corporate events', icon: CalendarHeart },
 ];
 
 const glowStyle = {
@@ -19,11 +20,14 @@ const HotelBenefits = () => {
           Benefits for Hotels & Venues
         </h2>
         <div className="grid sm:grid-cols-2 gap-6">
-          {benefits.map((item, idx) => (
+          {benefits.map((item, idx) => {
+            const Icon = item.icon;
+            return (
             <div key={idx} className="bg-[#1A2A3C] p-6 rounded-lg shadow-md">
-              <p className="text-[#F1FAEE]/80">{item}</p>
+              <div className="feature-icon feature-icon--dark"><Icon size={21} strokeWidth={1.8} /></div>
+              <p className="text-[#F1FAEE]/80">{item.text}</p>
             </div>
-          ))}
+          )})}
         </div>
       </div>
     </section>

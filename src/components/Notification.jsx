@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, XCircle, X } from 'lucide-react';
 
 const Notification = ({ 
@@ -10,6 +10,13 @@ const Notification = ({
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
+  const handleClose = useCallback(() => {
+    setIsAnimating(false);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  }, [onClose]);
+
   useEffect(() => {
     if (isVisible) {
       setIsAnimating(true);
@@ -18,19 +25,11 @@ const Notification = ({
       }, duration);
       return () => clearTimeout(timer);
     }
-  }, [isVisible, duration]);
-
-  const handleClose = () => {
-    setIsAnimating(false);
-    setTimeout(() => {
-      onClose();
-    }, 300); // Match animation duration
-  };
+  }, [isVisible, duration, handleClose]);
 
   if (!isVisible) return null;
 
   const isSuccess = type === 'success';
-  const iconColor = isSuccess ? '#F4A261' : '#EF4444';
   const bgColor = isSuccess ? 'bg-[#F1FAEE]' : 'bg-red-50';
   const borderColor = isSuccess ? 'border-[#F4A261]' : 'border-red-200';
   const textColor = isSuccess ? 'text-[#0D1B2A]' : 'text-red-800';

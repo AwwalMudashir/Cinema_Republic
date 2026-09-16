@@ -6,7 +6,7 @@ const glowStyle = {
 
 const partners = [
   {
-    name: 'La Palm Royal Beach Hotel',
+    name: 'Cinema Republic Event Partner',
     logo: '/c57.PNG',
   },
   {

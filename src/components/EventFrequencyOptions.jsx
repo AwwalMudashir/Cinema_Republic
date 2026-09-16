@@ -1,4 +1,5 @@
 import React from 'react';
+import { CalendarDays, Sparkles } from 'lucide-react';
 
 const glowStyle = {
   textShadow: '0 0 5px rgba(244, 162, 97, 0.6)',
@@ -22,7 +23,8 @@ const EventFrequencyOptions = () => {
       <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
         {/* Weekly */}
         <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
-          <h3 className="text-2xl font-semibold text-[#0D1B2A] mb-4">📅 Weekly Events</h3>
+          <div className="feature-icon feature-icon--light"><CalendarDays size={22} strokeWidth={1.8} /></div>
+          <h3 className="text-2xl font-semibold text-[#0D1B2A] mb-4">Weekly Events</h3>
           <p className="text-[#0D1B2A]/80 text-base leading-relaxed">
             Weekly screenings create a regular attraction that boosts foot traffic and guest engagement.
             They offer consistent opportunities to showcase the hotel’s amenities, restaurant, and services.
@@ -32,7 +34,8 @@ const EventFrequencyOptions = () => {
 
         {/* Monthly */}
         <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
-          <h3 className="text-2xl font-semibold text-[#0D1B2A] mb-4">🌟 Monthly Events</h3>
+          <div className="feature-icon feature-icon--light"><Sparkles size={22} strokeWidth={1.8} /></div>
+          <h3 className="text-2xl font-semibold text-[#0D1B2A] mb-4">Monthly Events</h3>
           <p className="text-[#0D1B2A]/80 text-base leading-relaxed">
             Monthly events allow for bigger, high-impact experiences. These feel special, attract larger crowds,
             and can be heavily promoted with themed visuals, trailers, and guest excitement.

@@ -2,6 +2,8 @@ import React from "react";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
+const MotionDiv = motion.div;
+
 const TrueFocus = ({
   sentence = "True Focus",
   manualMode = false,
@@ -88,7 +90,7 @@ const TrueFocus = ({
         );
       })}
 
-      <motion.div
+      <MotionDiv
         className="absolute top-0 left-0 pointer-events-none box-border border-0"
         animate={{
           x: focusRect.x,
@@ -133,7 +135,7 @@ const TrueFocus = ({
             filter: "drop-shadow(0 0 4px var(--border-color))",
           }}
         ></span>
-      </motion.div>
+      </MotionDiv>
     </div>
   );
 };

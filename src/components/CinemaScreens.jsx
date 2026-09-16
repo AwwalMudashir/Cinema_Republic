@@ -32,7 +32,7 @@ const CinemaScreens = () => {
           Cinema Screen Options
         </h2>
         <p className="text-[#0D1B2A]/80 max-w-2xl mx-auto text-lg">
-          Tailored for both cozy weekly shows and massive monthly experiences at La Palm Royal Beach Hotel.
+          Tailored for both cosy weekly shows and massive monthly experiences across our Nigerian partner venues.
         </p>
       </div>
 

@@ -1,20 +1,20 @@
 import React from 'react'
-import { useState } from 'react'
 import './App.css'
 import Navbar from './components/Navbar'
 import Display from './Display'
 import Footer from './components/Footer'
 import ScrollAnimation from './ScrollAnimation'
+import { useLocation } from 'react-router-dom'
 
 function App() {
+  const isAdmin = useLocation().pathname.startsWith('/admin');
 
   return (
     <div>
-
-      <Navbar />
-      <ScrollAnimation />
+      {!isAdmin && <Navbar />}
+      {!isAdmin && <ScrollAnimation />}
       <Display />
-      <Footer />
+      {!isAdmin && <Footer />}
     </div>
   )
 }

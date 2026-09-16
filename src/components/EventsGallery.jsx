@@ -24,7 +24,7 @@ const mediaItems = [
   {
     type: 'image',
     src: '/three.jpeg',
-    caption: 'What an amazing experience speaking alongside truly amazing people in the cinema industry at this year"s @berlinalespotlightaccra ',
+    caption: 'What an amazing experience speaking alongside truly inspiring people at an industry spotlight event.',
   },
   {
     type: 'video',
@@ -34,7 +34,7 @@ const mediaItems = [
   {
     type: 'image',
     src: '/four.jpeg',
-    caption: "We couldn't have asked for a better audience. #ForTheMANDEM was an absolute success. Huge thanks to our amazing partners @afropark.creatives and @buroghana",
+    caption: "We couldn't have asked for a better audience. #ForTheMANDEM was an absolute success. Huge thanks to our amazing creative partners.",
   },
   {
     type: 'video',
@@ -55,12 +55,7 @@ const mediaItems = [
     type: 'image',
     src: '/p1.jpg',
     caption: "Proudly backed by the founder's commitment to quality, this product reflects our dedication to excellence and customer satisfaction.",
-  },
-  {
-    type: 'image',
-    src: '/p2.jpg',
-    caption: "Proudly backed by the founder's commitment to quality, this product reflects our dedication to excellence and customer satisfaction.",
-  },
+  }
 
 ];
 

@@ -1,145 +1,21 @@
 import React from 'react';
+import { ArrowUpRight, Instagram, Mail, MapPin, Phone, Ticket } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-// Inline CSS for responsive footer
-const footerStyles = `
-.responsive-footer {
-  padding: 3rem 1.5rem;
-  background-color: #0D1B2A;
-  color: #E9C46A;
-}
-.responsive-footer-main {
-  max-width: 80rem;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2.5rem;
-  font-size: 0.95rem;
-}
-.responsive-footer h2 {
-  font-size: 2rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-  color: #F4A261;
-}
-.responsive-footer h3 {
-  margin-bottom: 0.75rem;
-  font-weight: 600;
-  font-size: 1.125rem;
-  color: #F4A261;
-}
-.responsive-footer ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.responsive-footer li, .responsive-footer a {
-  color: #E9C46A;
-  transition: color 0.2s;
-  margin-bottom: 0.5rem;
-  cursor: pointer;
-  text-decoration: none;
-  font-size: 1em;
-}
-.responsive-footer li:hover, .responsive-footer a:hover {
-  color: #F4A261;
-}
-.responsive-footer .footer-socials {
-  display: flex;
-  gap: 1rem;
-}
-.responsive-footer-bottom {
-  margin-top: 2.5rem;
-  padding-top: 1rem;
-  text-align: center;
-  font-size: 0.85rem;
-  border-top: 1px solid rgba(233, 196, 106, 0.3);
-  color: rgba(233, 196, 106, 0.7);
-}
-
-/* Responsive grid for footer columns */
-@media (min-width: 600px) {
-  .responsive-footer-main {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-@media (min-width: 900px) {
-  .responsive-footer-main {
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-  }
-}
-`;
-
-const Footer = () => {
-  return (
-    <>
-      <style>{footerStyles}</style>
-      <footer className="responsive-footer">
-        <div className="responsive-footer-main">
-          {/* Logo and Description */}
-          <div>
-            <h2>Cinema Republic Ltd.</h2>
-            <p style={{ color: 'rgba(233, 196, 106, 0.8)' }}>
-              Experience Our premier open-air cinema. Unique events. Local culture. Beach vibes.
-            </p>
-          </div>
-
-          {/* Navigation */}
-          <div>
-            <h3>Explore</h3>
-            <ul>
-              {['Home', 'About', 'Events', 'Contact'].map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <h3>Contact</h3>
-            <ul>
-              {/* <li>
-                Email:{' '}
-                <a
-                  href="mailto:events@cinema57.org"
-                >
-                  events@cinema57.org
-                </a>
-              </li> */}
-              <li>
-                Phone:{' '}
-                <a
-                  href="tel:+2347036478493"
-                >
-                  +234 703 647 8493
-                </a>
-              </li>
-              <li>Nigeria</li>
-            </ul>
-          </div>
-
-          {/* Socials */}
-          <div>
-            <h3>Follow Us</h3>
-            <div className="footer-socials">
-              <i class="fa-brands fa-instagram" style={{ marginTop: '5px', marginRight: '-6px' }}></i>
-              <a
-                href="https://www.instagram.com/cinemarepublic_naija/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-
-                @cinemarepublic_naija
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div className="responsive-footer-bottom">
-          &copy; {new Date().getFullYear()} Cinema Republic Ltd. All rights reserved.
-        </div>
-      </footer>
-    </>
-  );
-};
+const Footer = () => (
+  <footer className="site-footer">
+    <div className="site-footer__banner">
+      <div><span><Ticket size={19} /> Tickets are going digital</span><h2>Your next movie night starts here.</h2></div>
+      <Link to="/movies">See upcoming movies <ArrowUpRight size={18} /></Link>
+    </div>
+    <div className="site-footer__main">
+      <div className="site-footer__brand"><img src="/logo.png" alt="Cinema Republic" /><p>Unforgettable stories, open skies and the easy rhythm of a Lagos night.</p></div>
+      <div><h3>Explore</h3><ul><li><Link to="/">Home</Link></li><li><Link to="/movies">Movies & tickets</Link></li><li><Link to="/events">Experiences</Link></li><li><Link to="/about-us">Our story</Link></li></ul></div>
+      <div><h3>Plan with us</h3><ul><li><Link to="/partnership">Partnerships</Link></li><li><Link to="/contact">Host a screening</Link></li><li><Link to="/contact">Get in touch</Link></li></ul></div>
+      <div><h3>Find us</h3><ul className="site-footer__contact"><li><MapPin size={16} /><span>Lagos, Nigeria</span></li><li><Phone size={16} /><a href="tel:+2347036478493">+234 703 647 8493</a></li><li><Mail size={16} /><a href="mailto:events@cinema57.org">events@cinema57.org</a></li><li><Instagram size={16} /><a href="https://www.instagram.com/cinemarepublic_naija/" target="_blank" rel="noopener noreferrer">@cinemarepublic_naija</a></li></ul></div>
+    </div>
+    <div className="site-footer__bottom"><span>© {new Date().getFullYear()} Cinema Republic Ltd.</span><span>Stories feel bigger under the stars.</span></div>
+  </footer>
+);
 
 export default Footer;

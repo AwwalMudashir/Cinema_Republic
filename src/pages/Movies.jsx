@@ -24,7 +24,7 @@ const Movies = () => {
   }, [activeFilter, movies]);
 
   const featuredMovie = movies.find((movie) => movie.featured) || movies[0];
-  const featuredShowing = featuredMovie?.screenings[0];
+  const featuredShowing = featuredMovie?.primaryScreening;
 
   return (
     <main className="movies-page">
@@ -43,16 +43,16 @@ const Movies = () => {
               <a href="#now-showing" className="ticket-button ticket-button--primary">
                 See what’s showing <ArrowDown size={18} />
               </a>
-              {featuredMovie && <Link to={`/movies/${featuredMovie.slug}`} className="ticket-button ticket-button--glass">Book featured film</Link>}
+              {featuredMovie && <Link to={`/movies/${featuredMovie.slug}`} className="ticket-button ticket-button--glass">{featuredMovie.isBookable ? 'Book featured film' : 'View featured film'}</Link>}
             </div>
           </div>
 
           {featuredMovie && <aside className="movies-hero__showcard" aria-label="Featured screening">
-            <p>Featured screening</p>
+            <p>{featuredMovie.isBookable ? 'Featured screening' : featuredMovie.isComingSoon ? 'Coming soon' : 'Sold out'}</p>
             <h2>{featuredMovie.title}</h2>
             <div><CalendarCheck2 size={18} /> {formatShowing(featuredShowing.starts_at, featuredShowing.venue.timezone, { dateStyle: 'full', timeStyle: 'short' })}</div>
             <div><MapPin size={18} /> {featuredShowing.venue.name}, {featuredShowing.venue.city}</div>
-            <Link to={`/movies/${featuredMovie.slug}`}>Reserve tickets</Link>
+            <Link to={`/movies/${featuredMovie.slug}`}>{featuredMovie.isBookable ? 'Reserve tickets' : featuredMovie.isComingSoon ? 'See when sales open' : 'View screening'}</Link>
           </aside>}
         </div>
       </section>

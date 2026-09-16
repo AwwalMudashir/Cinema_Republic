@@ -2,7 +2,7 @@
 
 This guide is the implementation blueprint for the current React ticket-booking UI. It covers the database, security, administration, Paystack payment flow, digital ticket email, ticket verification, check-in and expiry.
 
-The movie listing and booking pages now read published, on-sale screenings from Supabase. The payment, ticket and staff flows are implemented locally but are **not live** until the migrations and Edge Functions are deployed, DNS/secrets are set, and Paystack test payments have passed. Do not accept real payments before the full test checklist passes.
+The movie listing and booking pages now read published movies with future `on_sale` screenings from Supabase, including a coming-soon preview before ticket sales open. The payment, ticket and staff flows are implemented locally but are **not live** until the migrations and Edge Functions are deployed, DNS/secrets are set, and Paystack test payments have passed. Do not accept real payments before the full test checklist passes.
 
 ## Hosting architecture: no separate Node.js server
 
@@ -17,7 +17,7 @@ This project does **not** require paid Node.js hosting, an Express server, a VPS
 | Payment/order API | Supabase Edge Functions |
 | Paystack webhook | Supabase Edge Function |
 | Ticket verification/redemption API | Supabase Edge Functions |
-| Order/ticket expiry jobs | Supabase Cron + Postgres functions |
+| Order/ticket expiry and sold-out sync jobs | Supabase Cron + Postgres functions |
 
 Supabase Edge Functions are server-side TypeScript functions running on a Deno-compatible managed runtime. Supabase hosts, scales and exposes their HTTPS URLs. They support npm packages and many Node APIs, but they are not a separately hosted Node/Express application.
 
@@ -487,10 +487,10 @@ as $$
 $$;
 ```
 
-Current browser/API policy state after `20260915110000_ticket_gate_and_catalog.sql` is pushed:
+Current browser/API policy state after `20260916130000_screening_inventory.sql` is pushed:
 
 - `anon` and `authenticated`: select published movies.
-- `anon` and `authenticated`: select future `on_sale` screenings and their active ticket types.
+- `anon` and `authenticated`: select future `on_sale` and `sold_out` screenings for published movies at active venues, including screenings whose sales window has not opened. Active ticket types and remaining counts remain hidden until `sales_start`; checkout remains blocked by the database function until then.
 - Orders and tickets are not directly readable from the browser in this guest-checkout MVP. Guest status uses the secret-token Edge Function, and the ticket page uses a safe-detail Edge Function. Add separate owner-only RLS policies if signed-in order history is built later.
 - Check-in staff receive only safe gate data through authenticated verification/redemption Edge Functions; raw ticket/order tables remain closed to browser roles.
 - Content managers can read/create/edit catalogue rows through role-checked RLS and the implemented `/admin/movies`, `/admin/venues` and `/admin/screenings` forms.
@@ -681,6 +681,12 @@ The check-in experience should be optimized for a phone:
 Keep manual redemption as the safe default. An optional high-volume “scan and redeem” mode may be added later, but it should require an explicit setting and provide a strong success/failure signal after every scan.
 
 Never hard-delete paid orders, payments or tickets from the admin UI. Use statuses so there is an audit history. After tickets have sold, the database blocks rescheduling or moving a screening and blocks reducing a ticket tier below paid/live-reserved capacity. Cancelling a screening invalidates tickets but **does not automatically refund customers**; process the refund separately in Paystack.
+
+Each ticket tier is a different admission category for the **same** screening (for example, General and VIP), and its capacity is the number of admissions in that category. A tier is temporarily unavailable when paid tickets plus live pending checkout holds reach its capacity. The screening becomes `sold_out` only when **every active tier** has no unsold places based on paid orders. After the scheduled `ends_at`, an `on_sale` or `sold_out` screening automatically becomes `completed`; draft and cancelled screenings are left alone. Completion does not invalidate already-issued tickets or issue refunds.
+
+Migration `20260916130000_screening_inventory.sql` adds the public remaining-count RPC and `sync_screening_sold_out_status()`. It runs the sync once immediately and schedules `sync-screening-inventory` every minute if Supabase Cron is already enabled. After `db push`, verify this job in **Dashboard → Integrations → Cron → Jobs**. If absent, enable Cron and create a SQL job named `sync-screening-inventory` with schedule `* * * * *` and command `select public.sync_screening_sold_out_status();`. Pending holds are intentionally excluded from the persisted `sold_out` status so abandoned checkouts cannot permanently close a screening. The public remaining count includes live holds. Raising a tier's capacity or a full refund can automatically reopen a sold-out screening at the next sync, provided the sales window is still open.
+
+Migration `20260916140000_auto_complete_screenings.sql` adds `sync_completed_screenings()`, backfills ended showings once, and schedules `complete-finished-screenings` every minute if Cron is already enabled. Verify that job in **Dashboard → Integrations → Cron → Jobs** too. If absent, create it with schedule `* * * * *` and SQL command `select public.sync_completed_screenings();`. The job changes the screening status after `ends_at`; ticket verification still follows each ticket's own `valid_until` and cancellation/refund rules.
 
 ## 8. Create orders safely and reserve capacity
 
@@ -956,7 +962,7 @@ After pushing the migration, open **Supabase Dashboard → Integrations → Cron
 Implemented locally:
 
 1. `src/lib/supabase.js` uses only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`; put these in the frontend host's environment settings and your local `.env.local`.
-2. The movie listing, home sneak peek and booking page query Supabase screenings. The migration adds public RLS policies for published/on-sale catalogue reads; no browser payment or ticket writes were opened.
+2. The movie listing, home sneak peek and booking page query Supabase screenings. Published movies with future `on_sale` screenings appear as coming soon before `sales_start`; `sold_out` screenings remain visible without checkout. Ticket tiers and remaining-count data are exposed only after sales open. Movies without a future `on_sale` or `sold_out` screening do not appear in the public programme.
 3. Booking calls `initialize-payment` with screening/ticket IDs and quantities, saves the private guest order token in `sessionStorage`, and redirects to the validated Paystack checkout URL. The browser's displayed subtotal is informational; Postgres computes the payable price.
 4. `/payment/callback` polls `order-status` for roughly 30 seconds and never marks an order paid itself. The token is not placed in the Paystack callback URL.
 5. `/ticket/:publicId` calls the public, rate-limited `ticket-details` Edge Function, which returns safe movie/screening/ticket metadata and a QR image. It never returns holder email, order or Paystack fields.

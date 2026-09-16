@@ -3,7 +3,9 @@ import { ArrowLeft, Clapperboard, ImagePlus, Pencil, Plus, Search } from 'lucide
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { posterUrl } from '../lib/catalog';
 import { supabase } from '../lib/supabase';
+import { useAdminAuth } from './auth-context';
 import { assertResult, uploadPoster } from './catalogue';
+import { clearDraft, draftKey, readDraft, saveDraft } from './drafts';
 
 const emptyMovie = { title: '', slug: '', tagline: '', synopsis: '', genre: '', rating: '', language: 'English', runtime_minutes: '', status: 'draft', featured: false, poster_path: '' };
 
@@ -35,10 +37,12 @@ export function AdminMovieForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isNew = id === 'new';
-  const [movie, setMovie] = useState(emptyMovie);
+  const { session } = useAdminAuth();
+  const movieDraftKey = draftKey(session.user.id, 'movie', id);
+  const [movie, setMovie] = useState(() => isNew ? readDraft(movieDraftKey)?.movie ?? emptyMovie : emptyMovie);
   const [poster, setPoster] = useState(null);
   const [backdrop, setBackdrop] = useState(null);
-  const [savedId, setSavedId] = useState(null);
+  const [savedId, setSavedId] = useState(() => isNew ? readDraft(movieDraftKey)?.savedId ?? null : null);
   const [loading, setLoading] = useState(!isNew);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -46,12 +50,16 @@ export function AdminMovieForm() {
     if (isNew) return undefined;
     let active = true;
     supabase.from('movies').select('*').eq('id', id).single().then(({ data, error: requestError }) => {
-      if (active) { if (data) setMovie(data); setError(requestError?.message || ''); setLoading(false); }
+      if (active) { if (data) setMovie(readDraft(movieDraftKey)?.movie ?? data); setError(requestError?.message || ''); setLoading(false); }
     });
     return () => { active = false; };
-  }, [id, isNew]);
+  }, [id, isNew, movieDraftKey]);
 
-  const update = (key, value) => setMovie((current) => ({ ...current, [key]: value }));
+  const update = (key, value) => {
+    const next = { ...movie, [key]: value };
+    setMovie(next);
+    saveDraft(movieDraftKey, { movie: next, savedId });
+  };
   async function save(event) {
     event.preventDefault(); setBusy(true); setError('');
     try {
@@ -69,18 +77,31 @@ export function AdminMovieForm() {
       const saved = isNew && !savedId
         ? assertResult(await supabase.from('movies').insert(values).select('id').single())
         : assertResult(await supabase.from('movies').update(values).eq('id', savedId || id).select('id').single());
-      if (isNew && !savedId) setSavedId(saved.id);
+      let nextMovie = movie;
+      if (isNew && !savedId) {
+        setSavedId(saved.id);
+        saveDraft(movieDraftKey, { movie: nextMovie, savedId: saved.id });
+      }
       if (poster) {
         const path = await uploadPoster(saved.id, poster);
         assertResult(await supabase.from('movies').update({ poster_path: path, updated_at: new Date().toISOString() }).eq('id', saved.id));
+        nextMovie = { ...nextMovie, poster_path: path };
+        setMovie(nextMovie);
+        setPoster(null);
+        saveDraft(movieDraftKey, { movie: nextMovie, savedId: saved.id });
       }
       if (backdrop) {
         const path = await uploadPoster(saved.id, backdrop);
         assertResult(await supabase.from('movies').update({ backdrop_path: path, updated_at: new Date().toISOString() }).eq('id', saved.id));
+        nextMovie = { ...nextMovie, backdrop_path: path };
+        setMovie(nextMovie);
+        setBackdrop(null);
+        saveDraft(movieDraftKey, { movie: nextMovie, savedId: saved.id });
       }
       if (publishAfterUpload) {
         assertResult(await supabase.from('movies').update({ status: 'published', updated_at: new Date().toISOString() }).eq('id', saved.id));
       }
+      clearDraft(movieDraftKey);
       navigate('/admin/movies', { replace: true });
     } catch (caught) { setError(caught.message); }
     finally { setBusy(false); }
@@ -101,12 +122,12 @@ export function AdminMovieForm() {
       <aside className="admin-form-side"><section className="admin-panel"><h2>Poster artwork</h2>
         <div className="admin-poster-preview">{movie.poster_path ? <img src={posterUrl(movie.poster_path)} alt="Current poster" /> : <ImagePlus size={36} />}</div>
         <label>Upload approved artwork<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setPoster(e.target.files?.[0] || null)} /></label>
-        <small>JPG, PNG or WebP · 5 MB max. Only artwork cleared by the distributor should be published.</small>
+        <small>JPG, PNG or WebP · 5 MB max. Only artwork cleared by the distributor should be published. Re-select files after a page reload.</small>
         <label className="admin-backdrop-input">Optional wide backdrop<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setBackdrop(e.target.files?.[0] || null)} /></label>
         {movie.backdrop_path && <small>Current backdrop: {movie.backdrop_path}</small>}</section>
         <section className="admin-panel"><h2>Visibility</h2><label>Status<select value={movie.status} onChange={(e) => update('status', e.target.value)}>
           <option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option>
-        </select></label><label className="admin-checkbox"><input type="checkbox" checked={Boolean(movie.featured)} onChange={(e) => update('featured', e.target.checked)} /> Feature on site</label>
+        </select></label><label className="admin-checkbox admin-featured-toggle"><input type="checkbox" checked={Boolean(movie.featured)} onChange={(e) => update('featured', e.target.checked)} /> Feature on site</label>
           <p className="admin-help">Publishing alone does not sell tickets. Add a future on-sale screening and active ticket tiers.</p></section>
         {error && <p className="admin-error" role="alert">{error}</p>}
         <button className="admin-button admin-button--primary" disabled={busy}>{busy ? 'Saving…' : 'Save movie'}</button>

@@ -41,6 +41,7 @@ export function AdminMovieForm() {
   const movieDraftKey = draftKey(session.user.id, 'movie', id);
   const [movie, setMovie] = useState(() => isNew ? readDraft(movieDraftKey)?.movie ?? emptyMovie : emptyMovie);
   const [poster, setPoster] = useState(null);
+  const [posterPreview, setPosterPreview] = useState(null);
   const [backdrop, setBackdrop] = useState(null);
   const [savedId, setSavedId] = useState(() => isNew ? readDraft(movieDraftKey)?.savedId ?? null : null);
   const [loading, setLoading] = useState(!isNew);
@@ -54,6 +55,16 @@ export function AdminMovieForm() {
     });
     return () => { active = false; };
   }, [id, isNew, movieDraftKey]);
+
+  useEffect(() => {
+    if (!poster) {
+      setPosterPreview(null);
+      return undefined;
+    }
+    const previewUrl = URL.createObjectURL(poster);
+    setPosterPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [poster]);
 
   const update = (key, value) => {
     const next = { ...movie, [key]: value };
@@ -120,7 +131,10 @@ export function AdminMovieForm() {
         <label>Runtime (minutes)<input type="number" min="1" value={movie.runtime_minutes || ''} onChange={(e) => update('runtime_minutes', e.target.value)} /></label>
       </div></section>
       <aside className="admin-form-side"><section className="admin-panel"><h2>Poster artwork</h2>
-        <div className="admin-poster-preview">{movie.poster_path ? <img src={posterUrl(movie.poster_path)} alt="Current poster" /> : <ImagePlus size={36} />}</div>
+        <div className="admin-poster-preview">{posterPreview || movie.poster_path
+          ? <img src={posterPreview || posterUrl(movie.poster_path)} alt={posterPreview ? 'Selected poster preview' : 'Uploaded movie poster'} />
+          : <ImagePlus size={36} />}</div>
+        {(poster || movie.poster_path) && <p className="admin-poster-caption">{poster ? 'Preview ready · Uploads when you save the movie' : 'Poster uploaded'}</p>}
         <label>Upload approved artwork<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setPoster(e.target.files?.[0] || null)} /></label>
         <small>JPG, PNG or WebP · 5 MB max. Only artwork cleared by the distributor should be published. Re-select files after a page reload.</small>
         <label className="admin-backdrop-input">Optional wide backdrop<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setBackdrop(e.target.files?.[0] || null)} /></label>

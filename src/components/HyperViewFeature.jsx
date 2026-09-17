@@ -26,6 +26,14 @@ export default function HyperViewFeature() {
           </Link>
         </div>
         <figure className="hyperview-feature__visual">
+          <Link className="hyperview-feature__artwork" to="/events" aria-label="Explore the HyperView posters and flyers on the Events page">
+            <span className="hyperview-feature__artwork-label">The world of HyperView <ArrowUpRight size={15} aria-hidden="true" /></span>
+            <span className="hyperview-feature__artwork-strip">
+              <img src={hyperViewAssets.flightPoster} alt="" loading="lazy" decoding="async" />
+              <img src={hyperViewAssets.skiesPoster} alt="" loading="lazy" decoding="async" />
+              <img src={hyperViewAssets.experiencePoster} alt="" loading="lazy" decoding="async" />
+            </span>
+          </Link>
           <HyperViewVideo video={hyperViewVideos.introduction} />
           <figcaption>
             <span>01 / Meet HyperView 9D</span>

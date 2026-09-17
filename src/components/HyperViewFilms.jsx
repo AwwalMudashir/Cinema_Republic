@@ -1,6 +1,7 @@
 import { ArrowUpRight } from 'lucide-react';
 import { hyperViewVideos } from '../lib/hyperview';
 import HyperViewVideo from './HyperViewVideo';
+import HyperViewArtwork from './HyperViewArtwork';
 import './hyperview.css';
 
 const films = [
@@ -42,6 +43,7 @@ export default function HyperViewFilms() {
             </article>
           ))}
         </div>
+        <HyperViewArtwork />
       </div>
     </section>
   );

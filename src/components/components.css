@@ -83,6 +83,10 @@
 .site-footer__main { width: min(1180px,100%); display: grid; grid-template-columns: 1.4fr repeat(3,1fr); gap: 55px; margin-inline: auto; padding: 60px 0 50px; }
 .site-footer__brand img { width: auto; height: 68px; object-fit: contain; }
 .site-footer__brand p { max-width: 280px; margin: 18px 0 0; font-size: .78rem; line-height: 1.75; }
+.site-footer__family { margin-top: 29px; padding-top: 21px; border-top: 1px solid rgba(255,255,255,.1); }
+.site-footer__family > span { display: block; margin-bottom: 8px; color: rgba(255,255,255,.46); font-size: .6rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.site-footer__family > a { display: inline-block; width: min(260px,100%); }
+.site-footer__family img { display: block; width: 100%; height: auto; }
 .site-footer h3 { margin: 10px 0 18px; color: white; font-family: 'Poppins',sans-serif; font-size: .73rem; letter-spacing: .12em; text-transform: uppercase; }
 .site-footer ul { display: grid; gap: 11px; padding: 0; margin: 0; list-style: none; }
 .site-footer a { color: rgba(255,255,255,.64); font-size: .76rem; text-decoration: none; transition: color 180ms ease; }

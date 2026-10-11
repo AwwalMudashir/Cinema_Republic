@@ -4,7 +4,6 @@ import './hyperview.css';
 
 export default function HyperViewVideo({ video, autoPlayInView = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -19,25 +18,15 @@ export default function HyperViewVideo({ video, autoPlayInView = false }) {
 
       element.muted = false;
       element.play()
-        .then(() => setAutoplayBlocked(false))
-        .catch(() => setAutoplayBlocked(true));
+        .catch(() => {
+          element.muted = true;
+          return element.play().catch(() => undefined);
+        });
     }, { threshold: 0.45 });
 
     observer.observe(element);
     return () => observer.disconnect();
   }, [autoPlayInView, video.src]);
-
-  const playWithSound = async () => {
-    const element = videoRef.current;
-    if (!element) return;
-    element.muted = false;
-    try {
-      await element.play();
-      setAutoplayBlocked(false);
-    } catch {
-      setAutoplayBlocked(true);
-    }
-  };
 
   if (video.src) {
     return (
@@ -53,12 +42,6 @@ export default function HyperViewVideo({ video, autoPlayInView = false }) {
         >
           Your browser does not support HTML video.
         </video>
-        {autoplayBlocked && (
-          <button className="hyperview-video__sound-start" type="button" onClick={playWithSound}>
-            <Play size={18} fill="currentColor" aria-hidden="true" />
-            Play with sound
-          </button>
-        )}
       </div>
     );
   }

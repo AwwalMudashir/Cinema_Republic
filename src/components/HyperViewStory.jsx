@@ -1,7 +1,7 @@
 import { ArrowUpRight, MoveUpRight, Sparkles, Volume2 } from 'lucide-react';
 import { createElement } from 'react';
 import { Link } from 'react-router-dom';
-import { hyperViewAssets } from '../lib/hyperview';
+import { hyperViewAssets, hyperViewLive } from '../lib/hyperview';
 import './hyperview.css';
 
 const sensations = [
@@ -16,8 +16,8 @@ export default function HyperViewStory() {
       <div className="hyperview-story__inner">
         <div className="hyperview-story__heading">
           <div>
-            <p className="hyperview-eyebrow"><span /> Another world of Cinema Republic</p>
-            <h2 id="hyperview-story-title">Introducing <em>HyperView.</em></h2>
+            <p className="hyperview-eyebrow"><span /> Now open and taking flight</p>
+            <h2 id="hyperview-story-title">Experience <em>HyperView.</em></h2>
           </div>
           <img src={hyperViewAssets.darkLogo} alt="HyperView Cinema Republic" loading="lazy" />
         </div>
@@ -25,7 +25,7 @@ export default function HyperViewStory() {
           <div className="hyperview-story__copy">
             <p className="hyperview-story__lead">More than a movie. A flight into the story.</p>
             <p>
-              HyperView 9D Flying Cinema is an immersive motion experience that makes you feel
+              HyperView 9D Flying Cinema is now bringing guests into an immersive motion experience that makes you feel
               like you’re actually flying through the adventure, rather than simply watching a movie.
               It combines cinematic visuals, motion, sound and special effects to put you right in
               the action and create an experience beyond traditional cinema.
@@ -42,18 +42,18 @@ export default function HyperViewStory() {
               Enquire about HyperView <ArrowUpRight size={18} />
             </Link>
           </div>
-          <div className="hyperview-story__gallery" aria-label="HyperView promotional artwork">
+          <div className="hyperview-story__gallery" aria-label="Guests enjoying the live HyperView experience">
             <figure className="hyperview-story__image hyperview-story__image--main">
               <img
-                src={hyperViewAssets.experiencePoster}
-                alt="HyperView promotional artwork showing a guest preparing for the flying cinema experience"
+                src={hyperViewLive.photos[2].src}
+                alt={hyperViewLive.photos[2].alt}
                 loading="lazy"
               />
             </figure>
             <figure className="hyperview-story__image hyperview-story__image--accent">
               <img
-                src={hyperViewAssets.comingSoonPoster}
-                alt="HyperView promotional artwork showing guests seated for an immersive flying cinema experience"
+                src={hyperViewLive.photos[0].src}
+                alt={hyperViewLive.photos[0].alt}
                 loading="lazy"
               />
             </figure>

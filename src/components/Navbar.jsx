@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Menu, Ticket, X } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
+import { PUBLIC_TICKETING_ENABLED } from '../config/features';
 import './components.css';
 
 const navItems = [
   { label: 'Home', to: '/' },
-  { label: 'Movies', to: '/movies' },
+  ...(PUBLIC_TICKETING_ENABLED ? [{ label: 'Movies', to: '/movies' }] : []),
   { label: 'About', to: '/about-us' },
   { label: 'Events', to: '/events' },
   { label: 'Partnership', to: '/partnership' },
@@ -35,7 +36,7 @@ const Navbar = () => {
         <ul className="site-nav__links">
           {navItems.map((item) => <li key={item.to}><NavLink to={item.to} end={item.to === '/'}>{item.label}</NavLink></li>)}
         </ul>
-        <Link to="/movies" className="site-nav__ticket"><Ticket size={16} /> Get tickets</Link>
+        {PUBLIC_TICKETING_ENABLED && <Link to="/movies" className="site-nav__ticket"><Ticket size={16} /> Get tickets</Link>}
         <button type="button" className="site-nav__toggle" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-controls="mobile-navigation" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}>
           {menuOpen ? <X size={27} /> : <Menu size={27} />}
         </button>
@@ -44,7 +45,7 @@ const Navbar = () => {
           <ul>
             {navItems.map((item, index) => <li key={item.to}><span>0{index + 1}</span><NavLink to={item.to} end={item.to === '/'} onClick={() => setMenuOpen(false)}>{item.label}</NavLink></li>)}
           </ul>
-          <Link className="site-nav__mobile-ticket" to="/movies" onClick={() => setMenuOpen(false)}><Ticket size={18} /> Browse movies & tickets</Link>
+          {PUBLIC_TICKETING_ENABLED && <Link className="site-nav__mobile-ticket" to="/movies" onClick={() => setMenuOpen(false)}><Ticket size={18} /> Browse movies & tickets</Link>}
         </div>
       </div>
     </nav>

@@ -11,15 +11,44 @@ export const hyperViewAssets = {
   visitorGuide: encodeURI(`${brandRoot}/Creative assets/Hyperview Flyer - 02.jpg`),
 };
 
-export const hyperViewVideos = {
-  introduction: {
-    id: 'uqu2etL4tX8',
-    title: 'Introducing HyperView 9D Flying Cinema',
-    poster: hyperViewAssets.comingSoonPoster,
-  },
-  experience: {
-    id: 'ew45a565jw8',
-    title: 'The HyperView 9D Flying Cinema experience',
-    poster: hyperViewAssets.experiencePoster,
-  },
+const liveRoot = '/9d-cinema';
+
+export const hyperViewLive = {
+  photos: [
+    {
+      src: `${liveRoot}/9D-pic1.jpeg`,
+      alt: 'Guests inside HyperView watching an immersive flying-cinema sequence',
+      title: 'Inside the adventure',
+    },
+    {
+      src: `${liveRoot}/9D-pic2.jpeg`,
+      alt: 'HyperView guests seated together in the motion cinema',
+      title: 'Ready for take-off',
+    },
+    {
+      src: `${liveRoot}/9D-pic3.jpeg`,
+      alt: 'Guests reacting during the live HyperView 9D experience',
+      title: 'Real reactions',
+    },
+  ],
+  videos: [
+    {
+      src: `${liveRoot}/9d-vid1.mp4`,
+      title: 'Inside the live HyperView 9D experience',
+      poster: `${liveRoot}/9D-pic3.jpeg`,
+      duration: '1:02',
+    },
+    {
+      src: `${liveRoot}/9d-vid2.mp4`,
+      title: 'Guests taking flight at HyperView',
+      poster: `${liveRoot}/9D-pic2.jpeg`,
+      duration: '0:11',
+    },
+    {
+      src: `${liveRoot}/9d-vid3.mp4`,
+      title: 'The HyperView motion-cinema experience',
+      poster: `${liveRoot}/9D-pic1.jpeg`,
+      duration: '0:15',
+    },
+  ],
 };

@@ -46,10 +46,10 @@ export default function HyperViewArtwork() {
     <div className="hyperview-artwork" aria-labelledby="hyperview-artwork-title">
       <div className="hyperview-artwork__heading">
         <div>
-          <p className="hyperview-eyebrow"><span /> The world of HyperView</p>
-          <h3 id="hyperview-artwork-title">A glimpse of the <em>adventure.</em></h3>
+          <p className="hyperview-eyebrow"><span /> Campaign archive</p>
+          <h3 id="hyperview-artwork-title">From teaser to <em>take-off.</em></h3>
         </div>
-        <p>Explore the artwork behind the flying cinema experience. Select an image to see it in full.</p>
+        <p>Explore the artwork that introduced the flying cinema before its doors opened. Select an image to see it in full.</p>
       </div>
       <div className="hyperview-artwork__posters">
         {artwork.filter((item) => item.format === 'poster').map((item) => <ArtworkCard key={item.src} item={item} />)}

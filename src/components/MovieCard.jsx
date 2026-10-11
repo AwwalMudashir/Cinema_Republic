@@ -4,14 +4,16 @@ import { Link } from 'react-router-dom';
 import { formatShowing } from '../lib/catalog';
 
 const MovieCard = ({ movie, compact = false }) => {
-  const showing = movie.screenings[0];
+  const showing = movie.primaryScreening;
   const zone = showing?.venue.timezone || 'Africa/Lagos';
   return (
     <article className={`movie-card ${compact ? 'movie-card--compact' : ''}`}>
       <div className="movie-card__art">
         <img src={movie.image} alt={`${movie.title} screening artwork`} />
         <div className="movie-card__shade" />
-        <span className="movie-card__status">On sale</span>
+        <span className={`movie-card__status${movie.isComingSoon ? ' movie-card__status--coming' : ''}${movie.isSoldOut ? ' movie-card__status--sold-out' : ''}`}>
+          {movie.isBookable ? 'On sale' : movie.isComingSoon ? 'Coming soon' : 'Sold out'}
+        </span>
         <span className="movie-card__rating">{movie.rating}</span>
       </div>
 
@@ -25,8 +27,12 @@ const MovieCard = ({ movie, compact = false }) => {
           <span><Clock3 size={15} /> {movie.runtime_minutes ? `${movie.runtime_minutes} min` : 'Movie night'}</span>
         </div>
 
+        {movie.isComingSoon && <p className="movie-card__sales-date">
+          Tickets open {formatShowing(movie.upcomingScreenings[0].sales_start, movie.upcomingScreenings[0].venue.timezone, { dateStyle: 'medium', timeStyle: 'short' })}
+        </p>}
+
         <Link className="movie-card__link" to={`/movies/${movie.slug}`}>
-          Get tickets <ArrowUpRight size={17} />
+          {movie.isBookable ? 'Get tickets' : 'View movie'} <ArrowUpRight size={17} />
         </Link>
       </div>
     </article>

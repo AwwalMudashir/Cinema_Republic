@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, CalendarDays } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BlurText from '../animations/BlurText';
 import './components.css';
@@ -19,10 +19,9 @@ const HeroSection = () => (
         Bringing the big screen to you. Experience movies under the stars—no theatre needed.
       </p>
       <div className="home-hero__actions">
-        <Link to="/movies" className="home-hero__button home-hero__button--primary"><CalendarDays size={18} /> Buy movie tickets</Link>
-        <Link to="/events" className="home-hero__button home-hero__button--secondary">Explore our experiences <ArrowRight size={18} /></Link>
+        <Link to="/events" className="home-hero__button home-hero__button--primary">Explore our experiences <ArrowRight size={18} /></Link>
       </div>
-      <a href="#ticket-preview" className="home-hero__scroll" aria-label="Scroll to upcoming screenings"><span /> Upcoming screenings</a>
+      <a href="#hyperview-feature-title" className="home-hero__scroll" aria-label="Discover HyperView 9D Flying Cinema"><span /> Discover HyperView 9D</a>
     </div>
   </section>
 );

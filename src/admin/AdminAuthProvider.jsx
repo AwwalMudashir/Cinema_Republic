@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { AdminAuthContext } from './auth-context';
+import { clearUserDrafts } from './drafts';
 
 export default function AdminAuthProvider({ children }) {
   const [state, setState] = useState({ loading: true, session: null, profile: null, error: '' });
@@ -42,7 +43,11 @@ export default function AdminAuthProvider({ children }) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
     },
-    signOut: async () => { if (supabase) await supabase.auth.signOut(); },
+    signOut: async () => {
+      if (!supabase) return;
+      await supabase.auth.signOut();
+      if (state.session?.user.id) clearUserDrafts(state.session.user.id);
+    },
   }), [state]);
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }

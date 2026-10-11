@@ -32,17 +32,17 @@ export default function MovieBooking() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (movie?.screenings.length && !movie.screenings.some((item) => item.id === screeningId)) {
-      setScreeningId(movie.screenings[0].id);
+    if (movie?.openScreenings.length && !movie.openScreenings.some((item) => item.id === screeningId)) {
+      setScreeningId(movie.openScreenings[0].id);
     }
   }, [movie, screeningId]);
 
-  const screening = movie?.screenings.find((item) => item.id === screeningId)
-    || movie?.screenings[0];
+  const screening = movie?.openScreenings.find((item) => item.id === screeningId)
+    || movie?.openScreenings[0];
   const ticketTypes = screening?.ticketTypes ?? [];
   const dates = useMemo(() => {
     const seen = new Set();
-    return (movie?.screenings ?? []).filter((item) => {
+    return (movie?.openScreenings ?? []).filter((item) => {
       const localDay = formatShowing(item.starts_at, item.venue.timezone, {
         year: 'numeric', month: '2-digit', day: '2-digit',
       });
@@ -54,7 +54,7 @@ export default function MovieBooking() {
   const selectedDay = screening && formatShowing(screening.starts_at, screening.venue.timezone, {
     year: 'numeric', month: '2-digit', day: '2-digit',
   });
-  const times = (movie?.screenings ?? []).filter((item) =>
+  const times = (movie?.openScreenings ?? []).filter((item) =>
     formatShowing(item.starts_at, item.venue.timezone, {
       year: 'numeric', month: '2-digit', day: '2-digit',
     }) === selectedDay);
@@ -81,7 +81,13 @@ export default function MovieBooking() {
 
   const checkout = async (event) => {
     event.preventDefault();
-    if (!screening || !ticketTypes.length) return;
+    if (!movie?.isBookable || !screening || !ticketTypes.length
+      || new Date(screening.sales_start).getTime() > Date.now()) return;
+    if (ticketTypes.some((type) => type.remaining !== null
+      && (quantities[type.id] || 0) > type.remaining)) {
+      setMessage('Availability has changed. Please adjust your ticket quantities.');
+      return;
+    }
     if (ticketCount < 1) {
       setMessage('Choose at least one ticket to continue.');
       return;
@@ -123,7 +129,7 @@ export default function MovieBooking() {
         <div className="ticket-shell booking-cover__content">
           <Link to="/movies" className="booking-back"><ArrowLeft size={17} /> All movies</Link>
           <div>
-            <p className="ticket-kicker">Now booking · {movie.genre}</p>
+            <p className="ticket-kicker">{movie.isBookable ? 'Now booking' : movie.isComingSoon ? 'Coming soon' : 'Sold out'} · {movie.genre}</p>
             <h1>{movie.title}</h1>
             <p>{movie.tagline}</p>
             <div className="booking-cover__meta">
@@ -137,6 +143,54 @@ export default function MovieBooking() {
 
       <section className="booking-workspace">
         <div className="ticket-shell">
+          {movie.upcomingScreenings.length > 0 && <section className="coming-soon-panel" aria-labelledby="sales-opening-title">
+            <div className="coming-soon-panel__intro">
+              <span className="coming-soon-panel__icon"><CalendarDays size={25} /></span>
+              <div>
+                <p className="ticket-kicker ticket-kicker--dark">Tickets on the horizon</p>
+                <h2 id="sales-opening-title">{movie.isBookable ? 'More showtimes open soon' : 'Your next movie night is nearly here'}</h2>
+                <p>{movie.isBookable ? 'These additional showtimes are not bookable yet.' : 'Tickets are not available yet. Check back when sales open.'}</p>
+              </div>
+            </div>
+            <div className="coming-soon-panel__list">
+              {movie.upcomingScreenings.map((item) => <div className="coming-soon-panel__showing" key={item.id}>
+                <div>
+                  <span className="coming-soon-panel__label">Tickets open</span>
+                  <strong>{formatShowing(item.sales_start, item.venue.timezone, { dateStyle: 'full', timeStyle: 'short' })}</strong>
+                  <small>Local time · {item.venue.timezone}</small>
+                </div>
+                <div>
+                  <span className="coming-soon-panel__label">Screening</span>
+                  <strong>{formatShowing(item.starts_at, item.venue.timezone, { dateStyle: 'medium', timeStyle: 'short' })}</strong>
+                  <small>{item.venue.name}, {item.venue.city}</small>
+                </div>
+              </div>)}
+            </div>
+          </section>}
+          {movie.soldOutScreenings.length > 0 && <section className="coming-soon-panel coming-soon-panel--sold-out" aria-labelledby="sold-out-title">
+            <div className="coming-soon-panel__intro">
+              <span className="coming-soon-panel__icon"><Ticket size={25} /></span>
+              <div>
+                <p className="ticket-kicker ticket-kicker--dark">All places taken</p>
+                <h2 id="sold-out-title">{movie.isSoldOut ? 'All showtimes are sold out' : 'Some showtimes are sold out'}</h2>
+                <p>{movie.isSoldOut ? 'There are no tickets available right now.' : 'These showtimes have no places available right now.'} If a pending reservation expires, a place may become available again.</p>
+              </div>
+            </div>
+            <div className="coming-soon-panel__list">
+              {movie.soldOutScreenings.map((item) => <div className="coming-soon-panel__showing" key={item.id}>
+                <div>
+                  <span className="coming-soon-panel__label">Screening</span>
+                  <strong>{formatShowing(item.starts_at, item.venue.timezone, { dateStyle: 'full', timeStyle: 'short' })}</strong>
+                </div>
+                <div>
+                  <span className="coming-soon-panel__label">Venue</span>
+                  <strong>{item.venue.name}</strong>
+                  <small>{item.venue.city}</small>
+                </div>
+              </div>)}
+            </div>
+          </section>}
+          {movie.isBookable && <>
           <div className="booking-progress" aria-label="Booking steps">
             <span className="active"><i>1</i> Showtime</span>
             <span><i>2</i> Tickets</span>
@@ -181,14 +235,15 @@ export default function MovieBooking() {
                 <div className="ticket-options">
                   {ticketTypes.map((type) => (
                     <div className="ticket-option" key={type.id}>
-                      <div><h3>{type.name}</h3><p>{type.description || 'Admission for this screening'}</p></div>
+                      <div><h3>{type.name}</h3><p>{type.remaining === 0 ? 'Sold out' : type.description || 'Admission for this screening'}</p></div>
                       <strong>{formatKobo(type.price_kobo)}</strong>
                       <div className="quantity-control" aria-label={`${type.name} quantity`}>
                         <button type="button" onClick={() => changeQuantity(type.id, -1)}
                           aria-label={`Remove one ${type.name}`} disabled={!quantities[type.id]}><Minus size={16} /></button>
                         <span>{quantities[type.id] || 0}</span>
                         <button type="button" onClick={() => changeQuantity(type.id, 1)}
-                          aria-label={`Add one ${type.name}`} disabled={ticketCount >= 8}><Plus size={16} /></button>
+                          aria-label={`Add one ${type.name}`} disabled={ticketCount >= 8 || type.remaining === 0
+                            || (type.remaining !== null && (quantities[type.id] || 0) >= type.remaining)}><Plus size={16} /></button>
                       </div>
                     </div>
                   ))}
@@ -244,6 +299,7 @@ export default function MovieBooking() {
               <p className="order-summary__secure"><ShieldCheck size={16} /> Secure checkout powered by Paystack</p>
             </aside>
           </form>
+          </>}
         </div>
       </section>
     </main>

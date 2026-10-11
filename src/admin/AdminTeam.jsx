@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { MailPlus, ShieldCheck, UsersRound } from 'lucide-react';
 import { useAdminAuth } from './auth-context';
 import { adminFunction } from './api';
+import { clearDraft, draftKey, readDraft, saveDraft } from './drafts';
 
 const roleNames = { admin: 'Admin', content_manager: 'Content manager', check_in_staff: 'Check-in staff', customer: 'Customer / no staff access' };
+const emptyInvite = { email: '', full_name: '', role: 'check_in_staff' };
 
 export default function AdminTeam() {
   const { session } = useAdminAuth();
+  const inviteDraftKey = draftKey(session.user.id, 'invitation');
   const [users, setUsers] = useState([]);
-  const [invite, setInvite] = useState({ email: '', full_name: '', role: 'check_in_staff' });
+  const [invite, setInvite] = useState(() => readDraft(inviteDraftKey) ?? emptyInvite);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -23,12 +26,18 @@ export default function AdminTeam() {
       .catch((caught) => { if (active) setError(caught.message); });
     return () => { active = false; };
   }, []);
+  function updateInvite(key, value) {
+    const next = { ...invite, [key]: value };
+    setInvite(next);
+    saveDraft(inviteDraftKey, next);
+  }
   async function sendInvite(event) {
     event.preventDefault(); setBusy(true); setError(''); setNotice('');
     try {
       await adminFunction('admin-team', { action: 'invite', ...invite });
       setNotice(`Invitation sent to ${invite.email}. Their ${roleNames[invite.role]} role is assigned.`);
-      setInvite({ email: '', full_name: '', role: 'check_in_staff' });
+      clearDraft(inviteDraftKey);
+      setInvite(emptyInvite);
       await refresh();
     } catch (caught) { setError(caught.message); }
     finally { setBusy(false); }
@@ -56,13 +65,13 @@ export default function AdminTeam() {
       <p className="admin-help">Your own role cannot be changed here. Changes are checked server-side and recorded in the role audit log.</p>
     </section><form className="admin-panel" onSubmit={sendInvite}><span className="admin-panel-icon"><MailPlus size={22} /></span><h2>Invite a teammate</h2>
       <p>They receive a Supabase Auth invitation to set their password. They will use the same staff login as you.</p>
-      <div className="admin-fields admin-fields--single"><label>Full name<input maxLength={120} value={invite.full_name} onChange={(e) => setInvite({ ...invite, full_name: e.target.value })} /></label>
-        <label>Email<input required type="email" value={invite.email} onChange={(e) => setInvite({ ...invite, email: e.target.value })} /></label>
-        <label>Role<select value={invite.role} onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
+      <div className="admin-fields admin-fields--single"><label>Full name<input maxLength={120} value={invite.full_name} onChange={(e) => updateInvite('full_name', e.target.value)} /></label>
+        <label>Email<input required type="email" value={invite.email} onChange={(e) => updateInvite('email', e.target.value)} /></label>
+        <label>Role<select value={invite.role} onChange={(e) => updateInvite('role', e.target.value)}>
           <option value="check_in_staff">Check-in staff · gate only</option><option value="content_manager">Content manager · catalogue</option><option value="admin">Admin · full operations</option>
         </select></label></div>
       {error && <p className="admin-error" role="alert">{error}</p>}{notice && <p className="admin-success" role="status">{notice}</p>}
-      <button className="admin-button admin-button--primary" disabled={busy}><MailPlus size={17} /> {busy ? 'Working…' : 'Send invitation'}</button>
+      <button className="admin-button admin-button--primary admin-invite-submit" disabled={busy}><MailPlus size={17} /> {busy ? 'Working…' : 'Send invitation'}</button>
       <p className="admin-help"><ShieldCheck size={14} /> Auth invitation delivery must be configured in Supabase. Resend ticket emails are a separate service.</p>
     </form></div>
   </main>;

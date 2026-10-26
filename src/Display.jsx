@@ -5,13 +5,13 @@ import About from './pages/About'
 import Contact from './pages/Contact'
 import Events from './pages/Events'
 import Partnership from './pages/Partnership'
+import Movies from './pages/Movies'
+import MovieBooking from './pages/MovieBooking'
+import PaymentCallback from './pages/PaymentCallback'
+import TicketPage from './pages/TicketPage'
+import BookingPage from './pages/BookingPage'
 import ScrollToTop from './ScrollToTop';
 import { PUBLIC_TICKETING_ENABLED, TICKETING_ADMIN_ENABLED } from './config/features';
-const Movies = lazy(() => import('./pages/Movies'));
-const MovieBooking = lazy(() => import('./pages/MovieBooking'));
-const PaymentCallback = lazy(() => import('./pages/PaymentCallback'));
-const TicketPage = lazy(() => import('./pages/TicketPage'));
-const BookingPage = lazy(() => import('./pages/BookingPage'));
 const CheckIn = lazy(() => import('./pages/CheckIn'));
 const AdminAuthProvider = lazy(() => import('./admin/AdminAuthProvider'));
 const AdminFrame = lazy(() => import('./admin/AdminFrame'));

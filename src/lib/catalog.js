@@ -1,5 +1,23 @@
 import { supabase } from './supabase';
 
+const CATALOGUE_TIMEOUT_MS = 15_000;
+
+async function runCatalogueQuery(query, label) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), CATALOGUE_TIMEOUT_MS);
+
+  try {
+    return await query.abortSignal(controller.signal);
+  } catch (error) {
+    if (controller.signal.aborted || error?.name === 'AbortError') {
+      throw new Error(`${label} took too long to load. Check your connection and try again.`);
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 export const formatNaira = (amount) => new Intl.NumberFormat('en-NG', {
   style: 'currency',
   currency: 'NGN',
@@ -24,7 +42,7 @@ export function posterUrl(path) {
 export async function loadMovieProgramme() {
   if (!supabase) throw new Error('Movie booking is not configured yet. Add the Supabase site variables.');
 
-  const { data, error } = await supabase
+  const { data, error } = await runCatalogueQuery(supabase
     .from('screenings')
     .select(`
       id, status, starts_at, ends_at, sales_start, sales_end,
@@ -39,12 +57,15 @@ export async function loadMovieProgramme() {
     .eq('venue.is_active', true)
     .gt('sales_end', new Date().toISOString())
     .gt('starts_at', new Date().toISOString())
-    .order('starts_at', { ascending: true });
+    .order('starts_at', { ascending: true }), 'The session schedule');
   if (error) throw new Error(`Could not load screenings: ${error.message}`);
 
   // Inventory is a safe aggregate RPC; the underlying orders stay private.
   // If it is briefly unavailable, checkout still enforces the true capacity.
-  const { data: availability } = await supabase.rpc('public_ticket_availability');
+  const { data: availability } = await runCatalogueQuery(
+    supabase.rpc('public_ticket_availability'),
+    'Session availability',
+  ).catch(() => ({ data: null }));
   const remainingByType = new Map((availability ?? []).map((item) =>
     [item.ticket_type_id, Number(item.remaining)]));
 

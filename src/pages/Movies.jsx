@@ -33,26 +33,26 @@ const Movies = () => {
         <div className="movies-hero__overlay" />
         <div className="ticket-shell movies-hero__content">
           <div className="movies-hero__copy">
-            <p className="ticket-kicker"><Sparkles size={16} /> Cinema without walls</p>
-            <h1>Tonight feels better <em>under the stars.</em></h1>
+            <p className="ticket-kicker"><Sparkles size={16} /> HyperView 9D Flying Cinema</p>
+            <h1>Choose your session.<br /><em>Feel the adventure.</em></h1>
             <p className="movies-hero__lede">
-              Discover curated films, beachside atmosphere and stories worth sharing.
-              Pick a screening and we’ll save your place.
+              Explore immersive 9D experiences, choose an available date and time,
+              and secure every place in your party before you arrive.
             </p>
             <div className="movies-hero__actions">
               <a href="#now-showing" className="ticket-button ticket-button--primary">
-                See what’s showing <ArrowDown size={18} />
+                See available sessions <ArrowDown size={18} />
               </a>
-              {featuredMovie && <Link to={`/movies/${featuredMovie.slug}`} className="ticket-button ticket-button--glass">{featuredMovie.isBookable ? 'Book featured film' : 'View featured film'}</Link>}
+              {featuredMovie && <Link to={`/movies/${featuredMovie.slug}`} className="ticket-button ticket-button--glass">{featuredMovie.isBookable ? 'Book this experience' : 'View experience'}</Link>}
             </div>
           </div>
 
           {featuredMovie && <aside className="movies-hero__showcard" aria-label="Featured screening">
-            <p>{featuredMovie.isBookable ? 'Featured screening' : featuredMovie.isComingSoon ? 'Coming soon' : 'Sold out'}</p>
+            <p>{featuredMovie.isBookable ? 'Featured experience' : featuredMovie.isComingSoon ? 'Coming soon' : 'Sold out'}</p>
             <h2>{featuredMovie.title}</h2>
             <div><CalendarCheck2 size={18} /> {formatShowing(featuredShowing.starts_at, featuredShowing.venue.timezone, { dateStyle: 'full', timeStyle: 'short' })}</div>
             <div><MapPin size={18} /> {featuredShowing.venue.name}, {featuredShowing.venue.city}</div>
-            <Link to={`/movies/${featuredMovie.slug}`}>{featuredMovie.isBookable ? 'Reserve tickets' : featuredMovie.isComingSoon ? 'See when sales open' : 'View screening'}</Link>
+            <Link to={`/movies/${featuredMovie.slug}`}>{featuredMovie.isBookable ? 'Reserve a session' : featuredMovie.isComingSoon ? 'See when sales open' : 'View session'}</Link>
           </aside>}
         </div>
       </section>
@@ -61,10 +61,10 @@ const Movies = () => {
         <div className="ticket-shell">
           <div className="movie-programme__header">
             <div>
-              <p className="ticket-kicker ticket-kicker--dark">Now at Cinema57</p>
-              <h2 id="programme-title">Choose your next story</h2>
+              <p className="ticket-kicker ticket-kicker--dark">Now at HyperView</p>
+              <h2 id="programme-title">Choose your next adventure</h2>
             </div>
-            <p>Fresh picks for slow evenings, family moments and unforgettable date nights.</p>
+            <p>Every booking secures a specific immersive experience, date and session time.</p>
           </div>
 
           <div className="movie-filters" role="group" aria-label="Filter screenings">
@@ -93,12 +93,12 @@ const Movies = () => {
         <div className="ticket-shell">
           <div className="booking-steps__heading">
             <p className="ticket-kicker"><TicketCheck size={16} /> From sofa to screen</p>
-            <h2 id="booking-steps-title">Your ticket in three easy steps.</h2>
+            <h2 id="booking-steps-title">Your session in three easy steps.</h2>
           </div>
           <div className="booking-steps__grid">
-            <article><span>01</span><h3>Pick your film</h3><p>Choose an upcoming screening, date and showtime.</p></article>
-            <article><span>02</span><h3>Choose your vibe</h3><p>Go standard, bring the little ones or upgrade to a lounger.</p></article>
-            <article><span>03</span><h3>Pay & arrive</h3><p>Checkout securely and show your digital ticket at the gate.</p></article>
+            <article><span>01</span><h3>Pick a session</h3><p>Choose the experience, date and available time that suits you.</p></article>
+            <article><span>02</span><h3>Add your guests</h3><p>Select up to eight places. Weekday or weekend pricing is automatic.</p></article>
+            <article><span>03</span><h3>Pay & arrive</h3><p>Pay securely, then arrive 15 minutes early with your booking QR.</p></article>
           </div>
           <div className="booking-steps__note"><ShieldCheck size={20} /> Payments will be securely processed by Paystack.</div>
         </div>

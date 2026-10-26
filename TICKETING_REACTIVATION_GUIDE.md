@@ -1,19 +1,46 @@
-# Online Ticketing Pause and Reactivation Guide
+# HyperView Online Booking Reactivation and Operations Guide
 
-Last updated: 11 October 2026
+Last updated: 19 October 2026
 
 ## 1. Current decision and release state
 
-Cinema Republic's board has paused the public online movie-ticketing and payment launch. The implementation has **not** been deleted. It remains in this repository so it can be tested and reactivated later without rebuilding the system.
+Cinema Republic has approved restarting development of online booking for **HyperView 9D Flying Cinema**. The upgraded implementation is session-based: the customer purchases places for one experience, date and time, rather than buying a reusable general-entry ticket.
 
-The production release must keep both switches in `src/config/features.js` set to `false`:
+The implementation is present, but both switches remain `false` by default so it cannot become public before the staging migration, Edge Function deployment and acceptance tests are complete:
 
 ```js
 export const PUBLIC_TICKETING_ENABLED = false;
 export const TICKETING_ADMIN_ENABLED = false;
 ```
 
-These switches are deliberately stored in source control instead of Vercel environment variables. This prevents an old or incorrectly scoped Vercel variable from unexpectedly enabling checkout in production.
+Enable the admin switch on staging first. Enable the public switch only after pricing, sessions, Paystack test payments, email, reception and admission have all passed.
+
+## 1.1 Approved HyperView business rules
+
+- Every booking is tied to one specific experience, date and session time.
+- Full payment is collected online through Paystack; there is no outstanding balance at reception.
+- Monday–Friday admission is **₦10,500 per person**.
+- Saturday–Sunday admission is **₦12,500 per person**.
+- Prices are effective-dated database rules and can be changed for November 2026 without a frontend deployment.
+- One **General admission** inventory is used per session. Its capacity is the number of people who can buy that session.
+- A pending Paystack checkout holds capacity for approximately ten minutes. This is not the customer's ticket expiry.
+- Admission opens 15 minutes before the selected session by default.
+- The booking expires after the selected session ends plus the configured operational grace period, 30 minutes by default.
+- A missed session cannot be used for a later session.
+- The customer must accept the non-refundable, no-rescheduling and arrival policy before Paystack opens.
+- The confirmation email contains one booking reference and booking QR for the party. Individual admissions remain in the database beneath that booking.
+- Reception registration and final admission are separate staff actions.
+
+Internal screening states map to operations as follows:
+
+| Database status | Staff meaning |
+| --- | --- |
+| `draft` | Not available to customers |
+| `on_sale` | Scheduled and accepting bookings |
+| `sold_out` | Full; set automatically |
+| `in_progress` | Session has started; set automatically |
+| `completed` | Session has ended; set automatically |
+| `cancelled` | Deliberately cancelled by authorised staff |
 
 ## 2. What is currently disabled
 
@@ -21,15 +48,14 @@ These switches are deliberately stored in source control instead of Vercel envir
 
 When `PUBLIC_TICKETING_ENABLED` is `false`:
 
-- The **Movies** navigation link is removed on desktop and mobile.
-- The desktop **Get tickets** button is removed.
-- The mobile **Browse movies & tickets** button is removed.
-- The home-page **Buy movie tickets** CTA is removed.
+- The **Book HyperView** navigation link is removed on desktop and mobile.
+- The desktop and mobile **Book a session** buttons are removed.
+- The home-page **Book HyperView 9D** CTA is removed.
 - The home page no longer loads the upcoming-movies/screenings preview.
 - The ticketing banner and **Movies & tickets** footer links are removed.
 - `/movies` and every `/movies/:slug` booking URL redirect to `/`.
 - `/payment/callback` redirects to `/`.
-- `/ticket/:publicId` redirects to `/`.
+- `/ticket/:publicId` and `/booking/:publicId` redirect to `/`.
 - The public movie catalogue, checkout form and Supabase catalogue query are not loaded during a normal site visit.
 
 General company language such as **host a screening**, past event screenings and contact enquiries remains visible. Those describe Cinema Republic's existing event services and do not start an online payment.
@@ -39,10 +65,12 @@ General company language such as **host a screening**, past event screenings and
 When `TICKETING_ADMIN_ENABLED` is `false`, every `/admin/...` URL redirects to `/`. The following code is preserved but unavailable through the deployed website:
 
 - Admin authentication and role-based access control.
-- Movie, venue, screening and ticket-tier management.
+- Experience, venue, session, effective pricing and capacity management.
+- Bulk daily session creation across a date range.
 - Order and email-retry tools.
+- Reception booking search and arrival registration.
 - Team invitation and role management.
-- Staff ticket verification and redemption.
+- Supervisor ticket verification and one-time admission.
 
 ### Backend retained for later
 
@@ -75,6 +103,7 @@ Do not delete the disabled pages, components or styles. In particular, preserve:
 - `src/pages/MovieBooking.jsx`
 - `src/pages/PaymentCallback.jsx`
 - `src/pages/TicketPage.jsx`
+- `src/pages/BookingPage.jsx`
 - `src/pages/CheckIn.jsx`
 - `src/components/MovieCard.jsx`
 - `src/components/MovieSneakPeek.jsx`
@@ -83,6 +112,15 @@ Do not delete the disabled pages, components or styles. In particular, preserve:
 - `src/lib/catalog.js`
 - `src/admin/`
 - `supabase/`
+
+Important additions for the HyperView workflow are:
+
+- `src/admin/AdminPricing.jsx` — effective weekday/weekend pricing.
+- `src/admin/AdminReception.jsx` — paid-booking lookup and arrival registration.
+- `supabase/functions/booking-details/` — safe public group-booking display.
+- `supabase/functions/staff-bookings/` — authenticated reception operations.
+- `supabase/migrations/20261019090000_hyperview_enum_values.sql` — new staff/session statuses.
+- `supabase/migrations/20261019091000_hyperview_session_booking.sql` — pricing, validity, operations and automation.
 
 ## 4. Safe reactivation sequence
 
@@ -95,7 +133,8 @@ Do **not** enable public checkout directly in production. Reactivate it in stagi
 3. Confirm who will hold these roles:
    - `admin`
    - `content_manager`
-   - `check_in_staff`
+   - `cashier`
+   - `supervisor`
 4. Confirm Cinema Republic's Paystack account is fully verified and ready for live collections.
 5. Confirm the Resend sending domain and `EMAIL_FROM` address remain verified.
 
@@ -127,6 +166,9 @@ Do **not** enable public checkout directly in production. Reactivate it in stagi
    npx.cmd supabase functions deploy verify-ticket
    npx.cmd supabase functions deploy redeem-ticket
    npx.cmd supabase functions deploy ticket-details
+   npx.cmd supabase functions deploy booking-details
+   npx.cmd supabase functions deploy staff-bookings
+   npx.cmd supabase functions deploy admin-team
    npx.cmd supabase functions deploy admin-orders
    ```
 
@@ -136,8 +178,8 @@ Do **not** enable public checkout directly in production. Reactivate it in stagi
    https://STAGING_PROJECT_REF.supabase.co/functions/v1/paystack-webhook
    ```
 
-6. Confirm the pending-order and expired-ticket cron jobs are active.
-7. Add one complete test programme: movie, poster, venue, future on-sale screening and at least one active ticket tier with capacity.
+6. Confirm the pending-order job is active. Also confirm a job named `sync-hyperview-sessions` runs every minute with `select public.sync_hyperview_operations();`. The migration creates it automatically when Cron is already enabled; otherwise add it in Dashboard after enabling Cron.
+7. Add one complete test programme: published HyperView experience, poster, active venue, effective pricing rule, future scheduled session and General Admission capacity.
 8. Confirm staging admin/staff accounts and role assignments.
 
 ### Phase C — enable the admin workspace on staging
@@ -151,11 +193,14 @@ export const TICKETING_ADMIN_ENABLED = true;
 Keep `PUBLIC_TICKETING_ENABLED` false. Deploy to staging and verify:
 
 - `/admin/login`
-- Role-based navigation for admin, content manager and check-in staff.
-- Movie/venue/screening/tier CRUD.
+- Role-based navigation for admin, content manager, cashier and supervisor.
+- Experience/venue/session/capacity CRUD.
+- Weekday/weekend pricing rules and a future effective rule.
+- Bulk session creation.
 - Poster uploads.
 - Order listing and email retry.
-- Ticket verification and one-time redemption.
+- Reception booking retrieval and arrival registration.
+- Supervisor verification and one-time admission.
 
 This order allows staff to prepare catalogue data without exposing checkout to customers.
 
@@ -171,18 +216,21 @@ Deploy to staging and confirm that Movies, ticket buttons, footer promotion and 
 
 Run the complete customer test matrix:
 
-1. Browse published movies and future on-sale screenings.
+1. Browse published experiences and future scheduled sessions.
 2. Verify coming-soon, sold-out and available states.
-3. Select multiple ticket tiers and quantities.
-4. Confirm prices are calculated by the database, in naira/kobo.
+3. Confirm Monday–Friday sessions show ₦10,500 and Saturday–Sunday sessions show ₦12,500.
+4. Select a General Admission quantity and confirm the database recalculates the total in naira/kobo.
 5. Complete a Paystack test payment.
 6. Return to `/payment/callback` on the same staging hostname.
 7. Confirm webhook processing creates only one payment and one set of tickets.
-8. Confirm the ticket email arrives and its QR/link opens.
-9. Verify the ticket as authenticated staff without consuming it.
-10. Redeem it once and confirm the second redemption returns `already_used`.
-11. Test failed, abandoned, duplicate-webhook, expired-order, sold-out and invalid-ticket cases.
-12. Test on mobile and desktop.
+8. Confirm the booking email contains reference, contact, session, quantity, total paid, arrival instructions, expiry and a booking QR.
+9. Open `/booking/:publicId` and confirm no private customer data is exposed.
+10. Search/scan the booking as a cashier and register the party at reception.
+11. Verify an individual admission as a supervisor without consuming it.
+12. Redeem it once and confirm the second redemption returns `already_used`.
+13. Confirm an admission cannot be redeemed before reception registration.
+14. Test failed, abandoned, duplicate-webhook, expired-order, full-session, no-show and invalid-ticket cases.
+15. Test on mobile and desktop.
 
 ### Phase E — prepare production services
 

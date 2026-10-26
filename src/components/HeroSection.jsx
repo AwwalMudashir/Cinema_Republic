@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BlurText from '../animations/BlurText';
+import { PUBLIC_TICKETING_ENABLED } from '../config/features';
 import './components.css';
 
 const HeroSection = () => (
@@ -19,6 +20,7 @@ const HeroSection = () => (
         Bringing the big screen to you. Experience movies under the stars—no theatre needed.
       </p>
       <div className="home-hero__actions">
+        {PUBLIC_TICKETING_ENABLED && <Link to="/movies" className="home-hero__button home-hero__button--primary">Book HyperView 9D <ArrowRight size={18} /></Link>}
         <Link to="/events" className="home-hero__button home-hero__button--primary">Explore our experiences <ArrowRight size={18} /></Link>
       </div>
       <a href="#hyperview-feature-title" className="home-hero__scroll" aria-label="Discover HyperView 9D Flying Cinema"><span /> Discover HyperView 9D</a>

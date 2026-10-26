@@ -11,6 +11,7 @@ const Movies = lazy(() => import('./pages/Movies'));
 const MovieBooking = lazy(() => import('./pages/MovieBooking'));
 const PaymentCallback = lazy(() => import('./pages/PaymentCallback'));
 const TicketPage = lazy(() => import('./pages/TicketPage'));
+const BookingPage = lazy(() => import('./pages/BookingPage'));
 const CheckIn = lazy(() => import('./pages/CheckIn'));
 const AdminAuthProvider = lazy(() => import('./admin/AdminAuthProvider'));
 const AdminFrame = lazy(() => import('./admin/AdminFrame'));
@@ -24,6 +25,8 @@ const AdminScreenings = lazy(() => import('./admin/AdminScreenings').then((modul
 const AdminScreeningForm = lazy(() => import('./admin/AdminScreenings').then((module) => ({ default: module.AdminScreeningForm })));
 const AdminOrders = lazy(() => import('./admin/AdminOrders'));
 const AdminTeam = lazy(() => import('./admin/AdminTeam'));
+const AdminPricing = lazy(() => import('./admin/AdminPricing'));
+const AdminReception = lazy(() => import('./admin/AdminReception'));
 
 const Display = () => {
   return (
@@ -39,10 +42,12 @@ const Display = () => {
           <Route path='/movies/:slug' element={<MovieBooking />} />
           <Route path='/payment/callback' element={<PaymentCallback />} />
           <Route path='/ticket/:publicId' element={<TicketPage />} />
+          <Route path='/booking/:publicId' element={<BookingPage />} />
         </> : <>
           <Route path='/movies/*' element={<Navigate to='/' replace />} />
           <Route path='/payment/callback' element={<Navigate to='/' replace />} />
           <Route path='/ticket/*' element={<Navigate to='/' replace />} />
+          <Route path='/booking/*' element={<Navigate to='/' replace />} />
         </>}
         {TICKETING_ADMIN_ENABLED ? <>
           <Route path='/admin' element={<AdminAuthProvider><AdminFrame /></AdminAuthProvider>}>
@@ -52,9 +57,11 @@ const Display = () => {
             <Route path='venues' element={<RequireRole roles={['admin', 'content_manager']}><AdminVenues /></RequireRole>} />
             <Route path='screenings' element={<RequireRole roles={['admin', 'content_manager']}><AdminScreenings /></RequireRole>} />
             <Route path='screenings/:id' element={<RequireRole roles={['admin', 'content_manager']}><AdminScreeningForm /></RequireRole>} />
+            <Route path='pricing' element={<RequireRole roles={['admin', 'content_manager']}><AdminPricing /></RequireRole>} />
             <Route path='orders' element={<RequireRole roles={['admin']}><AdminOrders /></RequireRole>} />
+            <Route path='reception' element={<RequireRole roles={['admin', 'cashier', 'supervisor', 'check_in_staff']}><AdminReception /></RequireRole>} />
             <Route path='team' element={<RequireRole roles={['admin']}><AdminTeam /></RequireRole>} />
-            <Route path='check-in' element={<RequireRole roles={['admin', 'check_in_staff']}><CheckIn /></RequireRole>} />
+            <Route path='check-in' element={<RequireRole roles={['admin', 'supervisor', 'check_in_staff']}><CheckIn /></RequireRole>} />
           </Route>
           <Route path='/admin/login' element={<AdminAuthProvider><AdminLogin /></AdminAuthProvider>} />
         </> : <Route path='/admin/*' element={<Navigate to='/' replace />} />}

@@ -1,4 +1,4 @@
-import { ArrowUpRight, Clapperboard, MapPin, ReceiptText, ScanLine, Tickets, UsersRound } from 'lucide-react';
+import { ArrowUpRight, BadgeDollarSign, Clapperboard, MapPin, ReceiptText, ScanLine, Tickets, UserCheck, UsersRound } from 'lucide-react';
 import { createElement } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdminAuth } from './auth-context';
@@ -6,9 +6,11 @@ import { useAdminAuth } from './auth-context';
 const cards = [
   { title: 'Movies', copy: 'Create, publish and archive the programme.', to: '/admin/movies', icon: Clapperboard, roles: ['admin', 'content_manager'] },
   { title: 'Venues', copy: 'Keep locations and arrival details accurate.', to: '/admin/venues', icon: MapPin, roles: ['admin', 'content_manager'] },
-  { title: 'Screenings', copy: 'Set showtimes, sales windows and ticket tiers.', to: '/admin/screenings', icon: Tickets, roles: ['admin', 'content_manager'] },
+  { title: 'Sessions', copy: 'Schedule experiences, sales windows and seating capacity.', to: '/admin/screenings', icon: Tickets, roles: ['admin', 'content_manager'] },
+  { title: 'Pricing', copy: 'Schedule weekday and weekend admission prices.', to: '/admin/pricing', icon: BadgeDollarSign, roles: ['admin', 'content_manager'] },
   { title: 'Orders', copy: 'Trace payments, tickets and email delivery.', to: '/admin/orders', icon: ReceiptText, roles: ['admin'] },
-  { title: 'Check-in', copy: 'Verify tickets and redeem at the entrance.', to: '/admin/check-in', icon: ScanLine, roles: ['admin', 'check_in_staff'] },
+  { title: 'Reception', copy: 'Find paid bookings and register arriving guests.', to: '/admin/reception', icon: UserCheck, roles: ['admin', 'cashier', 'supervisor', 'check_in_staff'] },
+  { title: 'Admission', copy: 'Verify registered tickets and admit guests.', to: '/admin/check-in', icon: ScanLine, roles: ['admin', 'supervisor', 'check_in_staff'] },
   { title: 'Team', copy: 'Invite operators and assign their access.', to: '/admin/team', icon: UsersRound, roles: ['admin'] },
 ];
 

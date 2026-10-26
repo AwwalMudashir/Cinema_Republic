@@ -12,14 +12,20 @@ type FulfilledTicket = {
 export type FulfilledOrder = {
   outcome: string;
   order_id: string;
+  booking_public_id: string;
   reference: string;
   order_status: string;
   customer_name: string;
   customer_email: string;
+  customer_phone: string;
   amount_kobo: number | string;
   currency: string;
+  quantity: number | string;
   movie_title: string;
   starts_at: string;
+  ends_at: string;
+  valid_from: string;
+  valid_until: string;
   venue_name: string;
   venue_address: string;
   venue_city: string;
@@ -55,22 +61,26 @@ function formatNaira(amountKobo: number | string): string {
 }
 
 function textVersion(order: FulfilledOrder, siteUrl: string): string {
-  const tickets = order.tickets.map((ticket, index) =>
-    `Ticket ${index + 1} (${ticket.ticket_type}): ${siteUrl}/ticket/${ticket.public_id}`
-  ).join("\n");
+  const bookingUrl = `${siteUrl}/booking/${order.booking_public_id}`;
 
   return [
     `Hi ${order.customer_name},`,
     "",
-    `Your payment for ${order.movie_title} was successful.`,
-    `Order: ${order.reference}`,
-    `Amount: ${formatNaira(order.amount_kobo)}`,
-    `Showing: ${formatDateTime(order.starts_at, order.venue_timezone)}`,
+    `Your full payment for ${order.movie_title} was successful.`,
+    `Booking reference: ${order.reference}`,
+    `Contact: ${order.customer_email} · ${order.customer_phone}`,
+    `Guests: ${order.quantity}`,
+    `Total paid: ${formatNaira(order.amount_kobo)}`,
+    `Session: ${formatDateTime(order.starts_at, order.venue_timezone)}`,
     `Venue: ${order.venue_name}, ${order.venue_address}, ${order.venue_city}`,
+    `Admission opens: ${formatDateTime(order.valid_from, order.venue_timezone)}`,
+    `Booking expires: ${formatDateTime(order.valid_until, order.venue_timezone)}`,
     "",
-    tickets,
+    `Open booking: ${bookingUrl}`,
     "",
-    "Each ticket can be redeemed once. Do not share its link or QR code.",
+    "Arrive at least 15 minutes before the session. Reception will verify this booking and issue physical identification tags.",
+    "The booking is valid only for this session. It is non-refundable and cannot be rescheduled.",
+    "Keep the booking link and QR code private.",
   ].join("\n");
 }
 
@@ -100,34 +110,20 @@ export async function sendTicketEmail(
   if (claimError) throw new Error(`Could not update email delivery: ${claimError.message}`);
 
   const siteUrl = getSiteUrl();
-  const attachments: Array<Record<string, string>> = [];
-  const ticketBlocks: string[] = [];
-
-  for (const [index, ticket] of order.tickets.entries()) {
-    const ticketUrl = `${siteUrl}/ticket/${ticket.public_id}`;
-    const dataUrl = await QRCode.toDataURL(ticketUrl, {
-      errorCorrectionLevel: "M",
-      margin: 2,
-      width: 280,
-      color: { dark: "#121212", light: "#FFFFFF" },
-    });
-    const contentId = `cinema57-ticket-${index + 1}`;
-    attachments.push({
-      content: dataUrl.slice(dataUrl.indexOf(",") + 1),
-      filename: `cinema57-${ticket.public_id}.png`,
-      content_id: contentId,
-      content_type: "image/png",
-    });
-    ticketBlocks.push(`
-      <div style="margin:20px 0;padding:22px;border:1px solid #e7e2d8;border-radius:16px;background:#fff;">
-        <p style="margin:0 0 4px;color:#6b665d;font-size:12px;text-transform:uppercase;letter-spacing:1.5px;">Ticket ${index + 1}</p>
-        <h3 style="margin:0 0 14px;color:#171612;font-size:18px;">${escapeHtml(ticket.ticket_type)}</h3>
-        <img src="cid:${contentId}" width="220" height="220" alt="Ticket QR code" style="display:block;width:220px;height:220px;margin:0 auto 14px;" />
-        <p style="margin:0;text-align:center;font-family:monospace;color:#171612;">${escapeHtml(ticket.public_id)}</p>
-        <p style="margin:12px 0 0;text-align:center;"><a href="${escapeHtml(ticketUrl)}" style="color:#9b6b22;">Open digital ticket</a></p>
-      </div>
-    `);
-  }
+  const bookingUrl = `${siteUrl}/booking/${order.booking_public_id}`;
+  const dataUrl = await QRCode.toDataURL(bookingUrl, {
+    errorCorrectionLevel: "M",
+    margin: 2,
+    width: 320,
+    color: { dark: "#121212", light: "#FFFFFF" },
+  });
+  const contentId = "hyperview-booking";
+  const attachments: Array<Record<string, string>> = [{
+    content: dataUrl.slice(dataUrl.indexOf(",") + 1),
+    filename: `hyperview-${order.reference}.png`,
+    content_id: contentId,
+    content_type: "image/png",
+  }];
 
   const html = `<!doctype html>
   <html>
@@ -135,20 +131,33 @@ export async function sendTicketEmail(
       <div style="max-width:640px;margin:0 auto;padding:32px 18px;">
         <div style="background:#171612;color:#fff;padding:22px 26px;border-radius:18px 18px 0 0;">
           <p style="margin:0;color:#d8ad62;font-size:12px;letter-spacing:2px;text-transform:uppercase;">Cinema 57</p>
-          <h1 style="margin:8px 0 0;font-size:28px;">Your tickets are ready</h1>
+          <h1 style="margin:8px 0 0;font-size:28px;">Your HyperView session is booked</h1>
         </div>
         <div style="background:#fcfaf5;padding:26px;border-radius:0 0 18px 18px;">
           <p style="margin-top:0;">Hi ${escapeHtml(order.customer_name)},</p>
-          <p>Your payment was successful. Present each QR code at the entrance.</p>
+          <p>Your full payment was successful. Present this booking QR code at reception.</p>
           <div style="padding:18px;background:#efe8da;border-radius:12px;line-height:1.7;">
             <strong>${escapeHtml(order.movie_title)}</strong><br />
             ${escapeHtml(formatDateTime(order.starts_at, order.venue_timezone))}<br />
             ${escapeHtml(order.venue_name)}, ${escapeHtml(order.venue_address)}, ${escapeHtml(order.venue_city)}<br />
-            Order: ${escapeHtml(order.reference)}<br />
-            Total: ${escapeHtml(formatNaira(order.amount_kobo))}
+            Booking reference: ${escapeHtml(order.reference)}<br />
+            Customer: ${escapeHtml(order.customer_name)}<br />
+            Contact: ${escapeHtml(order.customer_email)} · ${escapeHtml(order.customer_phone)}<br />
+            Guests: ${escapeHtml(order.quantity)}<br />
+            Total paid: ${escapeHtml(formatNaira(order.amount_kobo))}
           </div>
-          ${ticketBlocks.join("")}
-          <p style="margin:24px 0 0;color:#6b665d;font-size:13px;line-height:1.6;">Each ticket can be redeemed once. Keep these QR codes private.</p>
+          <div style="margin:20px 0;padding:22px;border:1px solid #e7e2d8;border-radius:16px;background:#fff;text-align:center;">
+            <p style="margin:0 0 4px;color:#6b665d;font-size:12px;text-transform:uppercase;letter-spacing:1.5px;">Booking QR</p>
+            <img src="cid:${contentId}" width="240" height="240" alt="Booking QR code" style="display:block;width:240px;height:240px;margin:10px auto 14px;" />
+            <p style="margin:0;font-family:monospace;color:#171612;">${escapeHtml(order.reference)}</p>
+            <p style="margin:12px 0 0;"><a href="${escapeHtml(bookingUrl)}" style="color:#9b6b22;">Open booking confirmation</a></p>
+          </div>
+          <div style="padding:18px;border-left:4px solid #d89b4a;background:#fff7e8;line-height:1.7;font-size:13px;">
+            <strong>Arrival instructions</strong><br />
+            Arrive at least 15 minutes before the session. Reception will verify the booking and issue physical identification tags.<br />
+            Admission opens ${escapeHtml(formatDateTime(order.valid_from, order.venue_timezone))}. The booking expires ${escapeHtml(formatDateTime(order.valid_until, order.venue_timezone))}.
+          </div>
+          <p style="margin:24px 0 0;color:#6b665d;font-size:13px;line-height:1.6;">This booking is valid only for the selected session. It is non-refundable and cannot be rescheduled. Keep this QR code private.</p>
         </div>
       </div>
     </body>
@@ -166,7 +175,7 @@ export async function sendTicketEmail(
       body: JSON.stringify({
         from: requireEnv("EMAIL_FROM"),
         to: [order.customer_email],
-        subject: `Your ${order.movie_title} tickets - ${order.reference}`,
+        subject: `HyperView booking confirmed - ${order.reference}`,
         html,
         text: textVersion(order, siteUrl),
         attachments,

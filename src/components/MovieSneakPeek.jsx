@@ -14,16 +14,16 @@ const MovieSneakPeek = () => {
       <div className="ticket-shell ticket-preview__inner">
         <div className="ticket-preview__intro">
           <div>
-            <p className="ticket-kicker"><Ticket size={16} /> Your next movie night</p>
-            <h2 id="ticket-preview-title">The big screen is calling.</h2>
+            <p className="ticket-kicker"><Ticket size={16} /> HyperView 9D sessions</p>
+            <h2 id="ticket-preview-title">Choose when you want to fly.</h2>
           </div>
           <div className="ticket-preview__copy">
             <p>
-              Browse upcoming screenings, choose your night and book in minutes.
-              Your digital ticket arrives ready for the gate.
+              Choose an available experience, date and session time. Pay securely
+              and receive one booking confirmation for your party.
             </p>
             <Link to="/movies" className="ticket-text-link">
-              Explore all movies <ArrowRight size={18} />
+              Browse available sessions <ArrowRight size={18} />
             </Link>
           </div>
         </div>
@@ -38,9 +38,9 @@ const MovieSneakPeek = () => {
         </div>
 
         <div className="ticket-preview__promise">
-          <span><BadgeCheck size={18} /> Instant digital tickets</span>
+          <span><BadgeCheck size={18} /> Instant booking confirmation</span>
           <span><BadgeCheck size={18} /> Secure Paystack checkout</span>
-          <span><BadgeCheck size={18} /> Easy gate check-in</span>
+          <span><BadgeCheck size={18} /> Reception-ready QR code</span>
         </div>
       </div>
     </section>

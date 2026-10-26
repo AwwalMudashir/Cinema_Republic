@@ -1,19 +1,21 @@
 import { createElement, useState } from 'react';
 import {
-  Clapperboard, LayoutDashboard, LogOut, MapPin, Menu, ReceiptText,
-  ScanLine, ShieldCheck, Tickets, UsersRound, X,
+  BadgeDollarSign, Clapperboard, LayoutDashboard, LogOut, MapPin, Menu, ReceiptText,
+  ScanLine, ShieldCheck, Tickets, UserCheck, UsersRound, X,
 } from 'lucide-react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAdminAuth } from './auth-context';
 import './admin.css';
 
 const paths = [
-  { to: '/admin', label: 'Overview', icon: LayoutDashboard, roles: ['admin', 'content_manager', 'check_in_staff'], end: true },
+  { to: '/admin', label: 'Overview', icon: LayoutDashboard, roles: ['admin', 'content_manager', 'cashier', 'supervisor', 'check_in_staff'], end: true },
   { to: '/admin/movies', label: 'Movies', icon: Clapperboard, roles: ['admin', 'content_manager'] },
   { to: '/admin/venues', label: 'Venues', icon: MapPin, roles: ['admin', 'content_manager'] },
-  { to: '/admin/screenings', label: 'Screenings', icon: Tickets, roles: ['admin', 'content_manager'] },
+  { to: '/admin/screenings', label: 'Sessions', icon: Tickets, roles: ['admin', 'content_manager'] },
+  { to: '/admin/pricing', label: 'Pricing', icon: BadgeDollarSign, roles: ['admin', 'content_manager'] },
   { to: '/admin/orders', label: 'Orders', icon: ReceiptText, roles: ['admin'] },
-  { to: '/admin/check-in', label: 'Check-in', icon: ScanLine, roles: ['admin', 'check_in_staff'] },
+  { to: '/admin/reception', label: 'Reception', icon: UserCheck, roles: ['admin', 'cashier', 'supervisor', 'check_in_staff'] },
+  { to: '/admin/check-in', label: 'Admission', icon: ScanLine, roles: ['admin', 'supervisor', 'check_in_staff'] },
   { to: '/admin/team', label: 'Team', icon: UsersRound, roles: ['admin'] },
 ];
 
@@ -29,7 +31,7 @@ export default function AdminFrame() {
   const [menuOpen, setMenuOpen] = useState(false);
   if (loading) return <main className="admin-loading">Checking your account…</main>;
   if (!session) return <Navigate to={`/admin/login?next=${encodeURIComponent(location.pathname)}`} replace />;
-  if (!['admin', 'content_manager', 'check_in_staff'].includes(profile?.role)) {
+  if (!['admin', 'content_manager', 'cashier', 'supervisor', 'check_in_staff'].includes(profile?.role)) {
     return <main className="admin-access-denied"><ShieldCheck size={32} /><h1>Access restricted</h1>
       <p>{error || 'This account does not have an operational role.'}</p>
       <button className="admin-button" onClick={signOut}>Sign out</button></main>;

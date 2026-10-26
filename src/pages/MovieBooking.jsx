@@ -28,6 +28,7 @@ export default function MovieBooking() {
   const [screeningId, setScreeningId] = useState('');
   const [quantities, setQuantities] = useState({});
   const [customer, setCustomer] = useState({ name: '', email: '', phone: '' });
+  const [policyAccepted, setPolicyAccepted] = useState(false);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -39,7 +40,7 @@ export default function MovieBooking() {
 
   const screening = movie?.openScreenings.find((item) => item.id === screeningId)
     || movie?.openScreenings[0];
-  const ticketTypes = screening?.ticketTypes ?? [];
+  const ticketTypes = (screening?.ticketTypes ?? []).slice(0, 1);
   const dates = useMemo(() => {
     const seen = new Set();
     return (movie?.openScreenings ?? []).filter((item) => {
@@ -68,6 +69,7 @@ export default function MovieBooking() {
   const chooseScreening = (id) => {
     setScreeningId(id);
     setQuantities({});
+    setPolicyAccepted(false);
     setMessage('');
   };
 
@@ -96,6 +98,10 @@ export default function MovieBooking() {
       setMessage('Add your name, email and Nigerian phone number.');
       return;
     }
+    if (!policyAccepted) {
+      setMessage('Please accept the session, arrival and payment policy before continuing.');
+      return;
+    }
     setSubmitting(true);
     setMessage('');
     try {
@@ -103,6 +109,7 @@ export default function MovieBooking() {
         screening_id: screening.id,
         items: selectedItems,
         customer,
+        policy: { version: 'hyperview-booking-v1', accepted: true },
       });
       const url = new URL(result.authorization_url);
       if (url.protocol !== 'https:' || url.hostname !== 'checkout.paystack.com'
@@ -129,7 +136,7 @@ export default function MovieBooking() {
         <div className="ticket-shell booking-cover__content">
           <Link to="/movies" className="booking-back"><ArrowLeft size={17} /> All movies</Link>
           <div>
-            <p className="ticket-kicker">{movie.isBookable ? 'Now booking' : movie.isComingSoon ? 'Coming soon' : 'Sold out'} · {movie.genre}</p>
+            <p className="ticket-kicker">{movie.isBookable ? 'HyperView sessions now booking' : movie.isComingSoon ? 'Coming soon' : 'Sold out'} · {movie.genre}</p>
             <h1>{movie.title}</h1>
             <p>{movie.tagline}</p>
             <div className="booking-cover__meta">
@@ -192,15 +199,15 @@ export default function MovieBooking() {
           </section>}
           {movie.isBookable && <>
           <div className="booking-progress" aria-label="Booking steps">
-            <span className="active"><i>1</i> Showtime</span>
-            <span><i>2</i> Tickets</span>
-            <span><i>3</i> Checkout</span>
+            <span className="active"><i>1</i> Session</span>
+            <span><i>2</i> Guests</span>
+            <span><i>3</i> Full payment</span>
           </div>
           <form className="booking-layout" onSubmit={checkout}>
             <div className="booking-panels">
               <section className="booking-panel" aria-labelledby="showtime-title">
                 <div className="booking-panel__heading">
-                  <span>01</span><div><h2 id="showtime-title">Choose a showtime</h2><p>All times are local to the venue.</p></div>
+                  <span>01</span><div><h2 id="showtime-title">Choose your session</h2><p>Every booking is tied to one specific date, time and experience.</p></div>
                 </div>
                 <div className="date-picker">
                   {dates.map((item) => {
@@ -225,17 +232,18 @@ export default function MovieBooking() {
                     </button>
                   ))}
                 </div>
-                {screening && <p className="showtime-venue"><MapPin size={16} /> {screening.venue.name}, {screening.venue.city}</p>}
+                {screening && <><p className="showtime-venue"><MapPin size={16} /> {screening.venue.name}, {screening.venue.city}</p>
+                  <p className="session-price-note"><Info size={15} /> {['Sat', 'Sun'].includes(formatShowing(screening.starts_at, screening.venue.timezone, { weekday: 'short' })) ? 'Weekend' : 'Weekday'} price selected automatically from this date.</p></>}
               </section>
 
               <section className="booking-panel" aria-labelledby="tickets-title">
                 <div className="booking-panel__heading">
-                  <span>02</span><div><h2 id="tickets-title">Choose your tickets</h2><p>Maximum of eight admissions per order.</p></div>
+                  <span>02</span><div><h2 id="tickets-title">How many guests?</h2><p>One General Admission place per person, up to eight.</p></div>
                 </div>
                 <div className="ticket-options">
                   {ticketTypes.map((type) => (
                     <div className="ticket-option" key={type.id}>
-                      <div><h3>{type.name}</h3><p>{type.remaining === 0 ? 'Sold out' : type.description || 'Admission for this screening'}</p></div>
+                      <div><h3>{type.name}</h3><p>{type.remaining === 0 ? 'Sold out' : type.remaining !== null && type.remaining <= 5 ? `Only ${type.remaining} places left` : type.description || 'HyperView admission for this session'}</p></div>
                       <strong>{formatKobo(type.price_kobo)}</strong>
                       <div className="quantity-control" aria-label={`${type.name} quantity`}>
                         <button type="button" onClick={() => changeQuantity(type.id, -1)}
@@ -247,13 +255,13 @@ export default function MovieBooking() {
                       </div>
                     </div>
                   ))}
-                  {!ticketTypes.length && <p>No ticket types are on sale for this showing.</p>}
+                  {!ticketTypes.length && <p>No admissions are on sale for this session.</p>}
                 </div>
               </section>
 
               <section className="booking-panel" aria-labelledby="details-title">
                 <div className="booking-panel__heading">
-                  <span>03</span><div><h2 id="details-title">Where should we email your tickets?</h2><p>Each admission gets its own digital QR ticket.</p></div>
+                  <span>03</span><div><h2 id="details-title">Where should we send your confirmation?</h2><p>We will email one booking reference and QR code for your party.</p></div>
                 </div>
                 <div className="customer-fields">
                   <label className="field field--wide">Full name
@@ -268,6 +276,12 @@ export default function MovieBooking() {
                     <input name="phone" type="tel" value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })}
                       autoComplete="tel" maxLength={24} required placeholder="080… or +234…" />
                   </label>
+                </div>
+                <div className="booking-policy">
+                  <h3>Before you pay</h3>
+                  <ul><li>Arrive at least 15 minutes before the selected session.</li><li>This booking is valid only for the selected date, time and experience.</li><li>Full payment is collected now. Bookings are non-refundable and cannot be rescheduled.</li><li>A missed session cannot be used for admission to a later session.</li></ul>
+                  <label><input type="checkbox" checked={policyAccepted} onChange={(event) => { setPolicyAccepted(event.target.checked); setMessage(''); }} />
+                    <span>I understand and accept the HyperView booking and arrival policy.</span></label>
                 </div>
               </section>
             </div>
@@ -291,7 +305,9 @@ export default function MovieBooking() {
                 {!ticketCount && <p>No tickets selected yet.</p>}
               </div>
               <div className="order-summary__total"><span>Subtotal</span><strong>{formatKobo(totalKobo)}</strong></div>
-              <p className="order-summary__fees"><Info size={14} /> The final amount and availability are confirmed by the server before Paystack opens.</p>
+              <div className="order-summary__total order-summary__total--paid"><span>Full payment due now</span><strong>{formatKobo(totalKobo)}</strong></div>
+              {screening && <p className="order-summary__fees"><Info size={14} /> Arrive by {formatShowing(new Date(new Date(screening.starts_at).getTime() - Number(screening.admission_opens_minutes || 15) * 60000), screening.venue.timezone, { timeStyle: 'short' })}. This booking expires {formatShowing(new Date(new Date(screening.ends_at).getTime() + Number(screening.admission_grace_minutes || 30) * 60000), screening.venue.timezone, { dateStyle: 'medium', timeStyle: 'short' })} and cannot be used for another session.</p>}
+              <p className="order-summary__fees"><Info size={14} /> Price and availability are confirmed by the server before Paystack opens.</p>
               {message && <p className="booking-error" role="alert">{message}</p>}
               <button className="ticket-button ticket-button--pay" type="submit" disabled={submitting || !ticketTypes.length}>
                 <LockKeyhole size={17} /> {submitting ? 'Opening Paystack…' : 'Continue to secure payment'}

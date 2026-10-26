@@ -4,8 +4,8 @@ import { useAdminAuth } from './auth-context';
 import { adminFunction } from './api';
 import { clearDraft, draftKey, readDraft, saveDraft } from './drafts';
 
-const roleNames = { admin: 'Admin', content_manager: 'Content manager', check_in_staff: 'Check-in staff', customer: 'Customer / no staff access' };
-const emptyInvite = { email: '', full_name: '', role: 'check_in_staff' };
+const roleNames = { admin: 'Admin', content_manager: 'Content manager', cashier: 'Cashier', supervisor: 'Supervisor', check_in_staff: 'Legacy check-in staff', customer: 'Customer / no staff access' };
+const emptyInvite = { email: '', full_name: '', role: 'cashier' };
 
 export default function AdminTeam() {
   const { session } = useAdminAuth();
@@ -68,7 +68,7 @@ export default function AdminTeam() {
       <div className="admin-fields admin-fields--single"><label>Full name<input maxLength={120} value={invite.full_name} onChange={(e) => updateInvite('full_name', e.target.value)} /></label>
         <label>Email<input required type="email" value={invite.email} onChange={(e) => updateInvite('email', e.target.value)} /></label>
         <label>Role<select value={invite.role} onChange={(e) => updateInvite('role', e.target.value)}>
-          <option value="check_in_staff">Check-in staff · gate only</option><option value="content_manager">Content manager · catalogue</option><option value="admin">Admin · full operations</option>
+          <option value="cashier">Cashier · reception registration</option><option value="supervisor">Supervisor · admission and sessions</option><option value="content_manager">Content manager · catalogue and pricing</option><option value="admin">Admin · full operations</option>
         </select></label></div>
       {error && <p className="admin-error" role="alert">{error}</p>}{notice && <p className="admin-success" role="status">{notice}</p>}
       <button className="admin-button admin-button--primary admin-invite-submit" disabled={busy}><MailPlus size={17} /> {busy ? 'Working…' : 'Send invitation'}</button>

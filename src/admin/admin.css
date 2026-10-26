@@ -74,6 +74,7 @@
 .admin-status--draft,.admin-status--pending { background:#fff0d7; color:#a66c21; }
 .admin-status--sold_out { background:#ece9e5; color:#6b5b4b; }
 .admin-status--completed { background:#e8ecf0; color:#536779; }
+.admin-status--in_progress { background:#e8e6fa; color:#5a4ca4; }
 .admin-status--archived,.admin-status--cancelled,.admin-status--failed,.admin-status--refunded { background:#f8e7e5; color:#ad4e46; }
 .admin-two-column { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(300px,.85fr); gap:19px; align-items:start; }
 .admin-form-grid { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(280px,.7fr); gap:19px; align-items:start; }
@@ -166,8 +167,21 @@
 .admin-login-card small { display:block; margin-top:18px; color:#89979d; font-size:.66rem; line-height:1.6; }
 .admin-app .gate-page { min-height:0; }
 .admin-app .gate-page .flow-hero { padding-top:32px; }
+.admin-operations-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.admin-booking-card__head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.admin-booking-card__head h2 { margin:0; }
+.admin-booking-card__customer { display:grid; gap:3px; margin:0 0 18px!important; }
+.admin-booking-card__customer strong { color:var(--admin-ink); }
+.admin-arrival-actions { display:grid; gap:12px; margin-top:18px; padding-top:18px; border-top:1px solid var(--admin-line); }
+.admin-arrival-actions label { display:grid; gap:7px; color:#445867; font-size:.7rem; font-weight:700; }
+.admin-arrival-actions input { width:100%; min-height:44px; padding:10px 12px; border:1px solid #d9e1e3; border-radius:9px; background:#fcfdfc; color:var(--admin-ink); }
+.admin-booking-card .admin-ticket-links { margin-top:18px; padding-top:15px; border-top:1px solid var(--admin-line); }
+.admin-booking-card .admin-ticket-links span { display:flex; align-items:center; gap:7px; color:#6f7e87; font-size:.68rem; }
+.admin-series-form { margin-top:20px; }
+.admin-series-form .admin-panel-heading { margin-bottom:8px; }
+.admin-series-form .admin-panel-heading h2 { margin:0; }
 .admin-scrim { display:none; }
 @media (max-width:1100px) { .admin-home-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .admin-movie-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
-@media (max-width:900px) { .admin-sidebar { position:fixed; left:0; transform:translateX(-100%); transition:transform .2s; } .admin-sidebar--open { transform:translateX(0); } .admin-scrim { display:block; position:fixed; inset:0; z-index:25; border:0; background:rgba(9,23,35,.55); } .admin-menu-button { display:inline-flex; } .admin-topbar { justify-content:flex-start; gap:20px; } .admin-topbar a { margin-left:auto; } .admin-login-page { grid-template-columns:1fr; } .admin-login-art { min-height:310px; padding:28px; } .admin-login-art h1 { font-size:3rem; } .admin-login-foot { display:none; } .admin-login-panel { padding:50px 25px; } }
+@media (max-width:900px) { .admin-sidebar { position:fixed; left:0; transform:translateX(-100%); transition:transform .2s; } .admin-sidebar--open { transform:translateX(0); } .admin-scrim { display:block; position:fixed; inset:0; z-index:25; border:0; background:rgba(9,23,35,.55); } .admin-menu-button { display:inline-flex; } .admin-topbar { justify-content:flex-start; gap:20px; } .admin-topbar a { margin-left:auto; } .admin-login-page { grid-template-columns:1fr; } .admin-login-art { min-height:310px; padding:28px; } .admin-login-art h1 { font-size:3rem; } .admin-login-foot { display:none; } .admin-login-panel { padding:50px 25px; } .admin-operations-grid { grid-template-columns:1fr; } }
 @media (max-width:700px) { .admin-page-header--row { align-items:start; flex-direction:column; } .admin-two-column,.admin-form-grid,.admin-home-grid { grid-template-columns:1fr; } .admin-movie-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .admin-fields { grid-template-columns:1fr; } .admin-order-facts { grid-template-columns:repeat(2,1fr); } .admin-toolbar { flex-wrap:wrap; } .admin-search { width:100%; } }
 @media (max-width:480px) { .admin-movie-grid { grid-template-columns:1fr 1fr; gap:10px; } .admin-movie-art { height:185px; } .admin-movie-card>div:last-child { padding:13px; } .admin-movie-card h2 { font-size:1rem; } .admin-panel { padding:19px; } .admin-topbar span { display:none; } .admin-order-summary { gap:7px; flex-wrap:wrap; } .admin-order-summary>span:first-child { flex-basis:100%; } .admin-order-summary>b { min-width:0; } .admin-team-row { flex-wrap:wrap; } .admin-team-row select { margin-left:46px; } }

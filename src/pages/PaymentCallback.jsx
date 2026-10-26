@@ -27,7 +27,7 @@ export default function PaymentCallback() {
             reference, order_access_token: token,
           });
           if (!active) return;
-          setState({ loading: result.status === 'pending', status: result.status,
+          setState({ ...result, loading: result.status === 'pending',
             tickets: result.tickets || [], amountKobo: result.amount_kobo,
             requiresSupport: result.requires_support, error: '' });
           if (result.status !== 'pending') {
@@ -54,7 +54,7 @@ export default function PaymentCallback() {
         <p className="ticket-kicker">Cinema Republic · Secure booking</p>
         <h1>{paid ? 'Your night is booked.' : support ? 'Your payment needs a review.'
           : state.loading ? 'Checking your payment…' : 'Booking update'}</h1>
-        <p>{paid ? 'Your digital tickets are ready. We have also sent them to the email address used at checkout.'
+        <p>{paid ? 'Your HyperView booking is confirmed. We have emailed the booking reference and QR code used at reception.'
           : support ? 'Please contact the cinema with your reference. Do not pay again until we confirm your order.'
           : state.loading ? 'Paystack is finishing your payment while we wait for the secure confirmation.'
           : state.status === 'expired' ? 'This unpaid reservation expired. No tickets were issued.'
@@ -70,15 +70,12 @@ export default function PaymentCallback() {
           {reference && <p className="flow-reference">Reference: <strong>{reference}</strong></p>}
           {paid && state.amountKobo != null && <p>Paid: {formatKobo(state.amountKobo)}</p>}
           {state.error && <p className="flow-warning" role="alert">{state.error}</p>}
-          {paid && <div className="flow-ticket-list">
-            {state.tickets.map((ticket, index) => (
-              <Link className="flow-ticket-link" key={ticket.public_id} to={`/ticket/${ticket.public_id}`}>
-                <TicketCheck size={21} />
-                <span><strong>Ticket {index + 1} · {ticket.ticket_type}</strong><small>{ticket.public_id}</small></span>
-              </Link>
-            ))}
-          </div>}
-          {!state.loading && <Link className="ticket-button ticket-button--primary" to="/movies">Browse movies</Link>}
+          {paid && <><div className="callback-booking-summary">
+            <p><strong>{state.movie_title}</strong></p><p>{state.quantity} guest{state.quantity === 1 ? '' : 's'} · {state.venue_name}, {state.venue_city}</p>
+            <p>Arrive at least 15 minutes before your selected session. The booking is non-refundable, cannot be rescheduled and cannot be used for another session.</p>
+          </div>
+            {state.booking_public_id && <Link className="ticket-button ticket-button--primary" to={`/booking/${state.booking_public_id}`}><TicketCheck size={21} /> Open booking confirmation</Link>}</>}
+          {!state.loading && !paid && <Link className="ticket-button ticket-button--primary" to="/movies">Browse sessions</Link>}
         </article>
       </div>
     </main>

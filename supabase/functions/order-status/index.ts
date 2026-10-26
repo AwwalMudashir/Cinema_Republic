@@ -25,12 +25,21 @@ type TicketSummary = {
 };
 
 type OrderStatusResult = {
+  booking_public_id: string;
   reference: string;
   status: string;
   amount_kobo: number | string;
   currency: string;
   expires_at: string;
   paid_at: string | null;
+  customer_name: string;
+  quantity: number | string;
+  movie_title: string;
+  starts_at: string;
+  ends_at: string;
+  venue_name: string;
+  venue_city: string;
+  venue_timezone: string;
   tickets: TicketSummary[];
 };
 
@@ -110,12 +119,22 @@ export default {
         : [];
 
       return jsonResponse(request, {
+        booking_public_id: result.booking_public_id,
+        booking_url: `${siteUrl}/booking/${result.booking_public_id}`,
         reference: result.reference,
         status: result.status,
         amount_kobo: Number(result.amount_kobo),
         currency: result.currency,
         expires_at: result.expires_at,
         paid_at: result.paid_at,
+        customer_name: result.customer_name,
+        quantity: Number(result.quantity),
+        movie_title: result.movie_title,
+        starts_at: result.starts_at,
+        ends_at: result.ends_at,
+        venue_name: result.venue_name,
+        venue_city: result.venue_city,
+        venue_timezone: result.venue_timezone,
         tickets,
         requires_support: result.status === "payment_review",
       });

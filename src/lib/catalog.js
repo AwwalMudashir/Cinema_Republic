@@ -28,6 +28,7 @@ export async function loadMovieProgramme() {
     .from('screenings')
     .select(`
       id, status, starts_at, ends_at, sales_start, sales_end,
+      admission_opens_minutes, admission_grace_minutes,
       movie:movies!inner(id, slug, title, tagline, synopsis, poster_path,
         backdrop_path, genre, rating, language, runtime_minutes, featured),
       venue:venues!inner(name, address, city, country, timezone),
@@ -58,6 +59,8 @@ export async function loadMovieProgramme() {
       ends_at: row.ends_at,
       sales_start: row.sales_start,
       sales_end: row.sales_end,
+      admission_opens_minutes: row.admission_opens_minutes,
+      admission_grace_minutes: row.admission_grace_minutes,
       venue: row.venue,
       ticketTypes: (row.ticket_types ?? [])
         .filter((type) => type.is_active)

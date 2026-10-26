@@ -37,6 +37,8 @@ const reasonLabel = {
   refunded: 'This ticket was refunded.',
   order_not_paid: 'The order was not paid.',
   inactive: 'This ticket is not active.',
+  not_registered: 'Reception has not registered this guest yet.',
+  no_show: 'This guest missed the valid admission window.',
 };
 
 export default function CheckIn() {
@@ -152,9 +154,9 @@ export default function CheckIn() {
   return (
     <main className="flow-page gate-page">
       <section className="flow-hero ticket-shell">
-        <p className="ticket-kicker"><ShieldCheck size={17} /> Staff-only gate desk</p>
-        <h1>Welcome guests.<br />Protect every seat.</h1>
-        <p>Scan to inspect a ticket, then redeem it only when admitting the guest.</p>
+        <p className="ticket-kicker"><ShieldCheck size={17} /> Supervisor admission desk</p>
+        <h1>Admit registered guests.<br />Protect every seat.</h1>
+        <p>Reception must register the booking first. Scan an individual admission, verify it, then redeem it as the guest enters.</p>
       </section>
       <div className="ticket-shell flow-content">
         <div className="gate-grid">
@@ -162,7 +164,7 @@ export default function CheckIn() {
             <div className="gate-card-heading"><span className="flow-icon"><ScanLine size={30} /></span>
               <button className="gate-sign-out" type="button" onClick={leaveDesk}><LogOut size={16} /> Sign out</button></div>
             <h2>Scan a ticket</h2>
-            <p>Paste the link in the ticket email, enter its UUID, or use the camera on a supported browser.</p>
+            <p>Use the individual admission from the Reception record, enter its UUID, or scan an individual ticket link on a supported browser.</p>
             <video className={cameraRef.current.stream ? 'gate-video gate-video--active' : 'gate-video'}
               ref={videoRef} playsInline muted aria-label="Ticket scanning camera" />
             <div className="gate-camera-actions">
@@ -188,7 +190,7 @@ export default function CheckIn() {
               <h2>{result.redeemed ? 'Guest admitted' : result.valid ? 'Ticket is valid' : 'Do not admit'}</h2>
               <p className={result.valid ? 'gate-success' : 'flow-warning'}>
                 {result.redeemed ? 'This ticket has been redeemed and cannot be used again.'
-                  : result.valid ? 'Check the guest and admit only after tapping Redeem.'
+                  : result.valid ? 'Reception is complete. Admit only after tapping Redeem.'
                   : result.message || reasonLabel[result.reason] || 'This ticket is not valid.'}
               </p>
               {movie && <div className="gate-ticket-details">
@@ -196,6 +198,7 @@ export default function CheckIn() {
                 <div><h3>{movie.title}</h3><p>{ticket?.type} · {movie.rating}</p></div>
               </div>}
               {ticket && <p className="gate-detail"><strong>Holder</strong><span>{ticket.holder_name}</span></p>}
+              {ticket?.arrived_at && <p className="gate-detail"><strong>Registered at reception</strong><span>{formatShowing(ticket.arrived_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>}
               {screening && <>
                 <p className="gate-detail"><strong>Showing</strong><span>{formatShowing(screening.starts_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>
                 <p className="gate-detail"><strong>Venue</strong><span>{screening.venue}, {screening.venue_city}</span></p>

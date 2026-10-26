@@ -8,7 +8,7 @@ import { getAdminClient } from "../_shared/supabase.ts";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
-const ROLES = new Set(["customer", "check_in_staff", "content_manager", "admin"]);
+const ROLES = new Set(["customer", "cashier", "supervisor", "check_in_staff", "content_manager", "admin"]);
 
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {

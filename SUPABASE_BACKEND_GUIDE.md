@@ -1,6 +1,6 @@
 # Cinema57 Supabase backend and ticketing guide
 
-This guide is the implementation blueprint for the current React ticket-booking UI. It covers the database, security, administration, Paystack payment flow, digital ticket email, ticket verification, check-in and expiry.
+This guide is the implementation blueprint for the React and Supabase booking system. The current product is **HyperView 9D Flying Cinema session booking**: customers pay in full for a specific experience, date and time, receive one group booking confirmation, register at reception, and are then admitted by a supervisor.
 
 The movie listing and booking pages now read published movies with future `on_sale` screenings from Supabase, including a coming-soon preview before ticket sales open. The payment, ticket and staff flows are implemented locally but are **not live** until the migrations and Edge Functions are deployed, DNS/secrets are set, and Paystack test payments have passed. Do not accept real payments before the full test checklist passes.
 
@@ -27,17 +27,38 @@ If installing Docker for local Edge Function emulation is inconvenient, function
 
 At the time this guide was updated, the Supabase Free plan listed 500,000 Edge Function invocations, a 500 MB database, 1 GB file storage and 5 GB egress. This is normally ample for a small MVP, but it has no paid uptime SLA and inactive free projects may be paused. Monitor usage and explain to the client that a successful live ticket business may eventually need a paid plan. Always confirm current limits on the official pricing page before launch.
 
+## HyperView implementation update (19 October 2026)
+
+The original secure payment foundation remains in place. Two later migrations extend it:
+
+- `20261019090000_hyperview_enum_values.sql`
+- `20261019091000_hyperview_session_booking.sql`
+
+They add effective weekday/weekend pricing, cashier and supervisor roles, automatic `in_progress` state, session-bound ticket validity, no-show expiry, group booking IDs, reception registration, staff audit records, inventory reporting and bulk session generation.
+
+The authoritative prices are ₦10,500 Monday–Friday and ₦12,500 Saturday–Sunday until a later effective rule is entered in the admin Pricing screen. The selected session date is interpreted in the venue timezone (`Africa/Lagos`). Do not reintroduce browser-authoritative pricing.
+
+Deploy these additional Functions after applying the migrations:
+
+```powershell
+npx.cmd supabase functions deploy booking-details
+npx.cmd supabase functions deploy staff-bookings
+```
+
+`booking-details` is public but returns only safe booking/session information and is rate-limited. `staff-bookings` keeps JWT verification enabled and rechecks cashier/supervisor/admin permissions server-side.
+
 ## What the customer flow will do
 
-1. The customer selects a movie, screening, ticket types and quantities.
+1. The customer selects an experience, available date, session time and General Admission quantity.
 2. They provide a name, phone number and email address.
-3. The backend calculates the real price from the database and creates a temporary order.
-4. Paystack collects payment.
-5. A verified Paystack webhook changes the order to `paid` and creates one digital ticket per admission purchased.
-6. An email provider sends the customer a receipt and QR ticket link.
-7. Cinema57 staff scan the QR code at the venue.
-8. The verification endpoint returns the paid movie, screening, ticket type and validity.
-9. The check-in endpoint uses the ticket once. After the screening day, unused tickets become inactive and expired.
+3. They accept the session-only, 15-minute-early, non-refundable and no-rescheduling policy.
+4. The backend calculates the weekday/weekend price from an effective database rule and creates a ten-minute capacity hold.
+5. Paystack collects the full payment.
+6. A verified Paystack webhook changes the order to `paid` and creates one internal admission per guest.
+7. Resend sends one booking confirmation and group QR containing the reference, contact, session, quantity, total, validity and arrival instructions.
+8. The cashier retrieves the paid booking and registers the party at reception, where physical tags are issued.
+9. The supervisor verifies and redeems individual admissions when guests enter.
+10. Unused admissions become inactive `no_show` records after the session-specific grace period; they are never valid for a later session.
 
 The payment callback page in the browser is not proof of payment. Only the webhook/server-side Paystack verification may create tickets.
 
@@ -102,12 +123,12 @@ supabase/migrations/20260913123456_initial_ticketing_schema.sql
 
 Open that new migration file in your code editor. Paste only the SQL block below into it and save the file. Do **not** paste these `create table` statements directly into PowerShell, Command Prompt or Bash.
 
-Adjust required movie fields to match the final admin form if necessary.
+This is the historical base schema. Existing projects must **not** edit or rerun it; apply the two `20261019...` HyperView migrations instead. Those migrations safely add the new enum values and columns after the original enum transaction has committed.
 
 ```sql
 create extension if not exists pgcrypto;
 
-create type public.app_role as enum ('customer', 'check_in_staff', 'content_manager', 'admin');
+create type public.app_role as enum ('customer', 'check_in_staff', 'content_manager', 'admin'); -- cashier/supervisor are added by the later enum migration
 create type public.movie_status as enum ('draft', 'published', 'archived');
 create type public.screening_status as enum ('draft', 'on_sale', 'sold_out', 'cancelled', 'completed');
 create type public.order_status as enum ('pending', 'paid', 'failed', 'expired', 'cancelled', 'refunded');
@@ -320,17 +341,20 @@ Do not use one broad “staff” role for unrelated responsibilities. A gate wor
 | Role | Intended access |
 | --- | --- |
 | `customer` | View published movies; guest checkout/status uses private order access tokens. A signed-in order history is a separate future feature. |
-| `check_in_staff` | Sign in to the check-in screen, search limited ticket details, verify and redeem tickets |
-| `content_manager` | Create/edit/publish movies, venues, screenings and ticket types; no private order/payment access |
+| `cashier` | Retrieve paid bookings, verify payment and register arrivals at reception; cannot admit guests or edit the catalogue |
+| `supervisor` | View expected/registered guests and redeem admissions; cannot edit pricing or manage users |
+| `check_in_staff` | Legacy compatibility role with reception visibility and admission access; assign new accounts as cashier or supervisor instead |
+| `content_manager` | Create/edit/publish experiences, venues, sessions, capacities and pricing rules; no private payment-administration access |
 | `admin` | Everything above, plus invite staff, assign/revoke roles and view full orders/payments. Refunds are initiated in Paystack Dashboard; confirmed full-refund webhooks reconcile orders/tickets. |
 
 Only `admin` should assign roles. Creating or changing roles is not a low-risk operation: letting a lower role assign roles can become a privilege-escalation path.
 
-If the team is initially very small, start with `admin` and `check_in_staff`. Add `content_manager` when someone needs to maintain the programme without receiving access to customer/payment administration.
+If the team is initially very small, one `admin` can cover all operations. Otherwise assign separate `cashier`, `supervisor` and `content_manager` accounts.
 
 ### Permission rules
 
-- `check_in_staff` cannot create movies, change prices, view Paystack payloads, issue refunds or manage users.
+- `cashier` cannot admit guests, create experiences, change prices, view Paystack payloads, issue refunds or manage users.
+- `supervisor` cannot register arrivals, change the catalogue/prices, view Paystack payloads or manage users.
 - `content_manager` cannot verify/redeem tickets, view full customer/payment records or manage users.
 - `admin` can invite operational users and choose either operational role.
 - No user, including an admin, should change their own role directly from the browser.
@@ -647,42 +671,40 @@ Routes (one shared staff login):
 - `/admin/venues`
 - `/admin/screenings`
 - `/admin/screenings/:id`
+- `/admin/pricing`
 - `/admin/orders`
+- `/admin/reception`
 - `/admin/team`
 - `/admin/check-in`
 
-`check_in_staff` sees only Overview and Check-in. `content_manager` sees Overview, Movies, Venues and Screenings. `admin` sees all sections. Route guards shape the UI, while database RLS and each Edge Function enforce authorization independently.
+`cashier` sees Overview and Reception. `supervisor` sees Overview, Reception and Admission. `content_manager` sees Overview, Experiences, Venues, Sessions and Pricing. `admin` sees all sections. The legacy `check_in_staff` role remains compatible with reception/admission. Route guards shape the UI, while database RLS and each Edge Function enforce authorization independently.
 
 Admin capabilities:
 
 - Create, edit, publish, archive and feature movies.
 - Upload movie poster/backdrop images.
-- Create venues and screenings.
-- Configure dates, prices, capacities and ticket tiers.
-- Pause sales, cancel screenings or mark them sold out.
+- Create venues and sessions, including a bulk date-range/session-time generator.
+- Configure effective weekday/weekend prices and General Admission capacity.
+- Pause sales or cancel sessions. Full, in-progress and completed states are automatic.
 - Search by order reference, customer email or ticket public ID.
 - View payment and email-delivery status.
-- Invite check-in staff/content managers and change or revoke their roles from `/admin/team`.
+- Invite cashiers, supervisors and content managers and change or revoke their roles from `/admin/team`.
 - Retry a failed ticket email without changing the paid order.
 - View the latest Paystack refund event. Initiate refunds in Paystack Dashboard, not from this app; a confirmed full `refund.processed` webhook invalidates tickets. Partial refunds require manual review.
 
 Before using Team invitations, set Supabase Dashboard -> Authentication -> URL Configuration -> Site URL to `https://cinemarepublicnaija.com` and allow `https://cinemarepublicnaija.com/admin/login?invite=1` as a redirect URL. Staff invitations use Supabase Auth email delivery, which is separate from Resend ticket mail; configure Auth SMTP for reliable real-world invitations. Invitees follow the link to set a password of at least 12 characters. An admin account must first be bootstrapped once with the SQL in section 4; the app intentionally cannot create its first admin.
 
-The check-in experience should be optimized for a phone:
+The physical operation has two explicit stages:
 
-1. Staff sign in and open `/admin/check-in`.
-2. They scan the QR code or enter the public ticket ID manually.
-3. The app calls `verify-ticket` and shows a large result state.
-4. A valid result shows the movie poster/title, date, time, venue, ticket type and holder name.
-5. Staff press **Redeem ticket** to call `redeem-ticket`.
-6. The success state shows “Admit guest” and the check-in time.
-7. Scanning the same ticket again shows “Already used” and its original check-in time.
+1. A cashier opens `/admin/reception`, searches/scans the group booking, confirms `paid`, records optional physical-tag notes and registers the party as arrived.
+2. A supervisor opens Reception or `/admin/check-in`, verifies a registered individual admission and explicitly admits it.
+3. A second admission attempt returns `already_used` and its original admission time.
 
 Keep manual redemption as the safe default. An optional high-volume “scan and redeem” mode may be added later, but it should require an explicit setting and provide a strong success/failure signal after every scan.
 
 Never hard-delete paid orders, payments or tickets from the admin UI. Use statuses so there is an audit history. After tickets have sold, the database blocks rescheduling or moving a screening and blocks reducing a ticket tier below paid/live-reserved capacity. Cancelling a screening invalidates tickets but **does not automatically refund customers**; process the refund separately in Paystack.
 
-Each ticket tier is a different admission category for the **same** screening (for example, General and VIP), and its capacity is the number of admissions in that category. A tier is temporarily unavailable when paid tickets plus live pending checkout holds reach its capacity. The screening becomes `sold_out` only when **every active tier** has no unsold places based on paid orders. After the scheduled `ends_at`, an `on_sale` or `sold_out` screening automatically becomes `completed`; draft and cancelled screenings are left alone. Completion does not invalidate already-issued tickets or issue refunds.
+HyperView currently uses one **General Admission** inventory per session. Capacity is the number of people who can purchase that session. It is temporarily unavailable when paid admissions plus live pending checkout holds reach capacity. The session becomes `sold_out` automatically, becomes `in_progress` at `starts_at`, and becomes `completed` after `ends_at`.
 
 Migration `20260916130000_screening_inventory.sql` adds the public remaining-count RPC and `sync_screening_sold_out_status()`. It runs the sync once immediately and schedules `sync-screening-inventory` every minute if Supabase Cron is already enabled. After `db push`, verify this job in **Dashboard → Integrations → Cron → Jobs**. If absent, enable Cron and create a SQL job named `sync-screening-inventory` with schedule `* * * * *` and command `select public.sync_screening_sold_out_status();`. Pending holds are intentionally excluded from the persisted `sold_out` status so abandoned checkouts cannot permanently close a screening. The public remaining count includes live holds. Raising a tier's capacity or a full refund can automatically reopen a sold-out screening at the next sync, provided the sales window is still open.
 
@@ -700,7 +722,8 @@ supabase/migrations/20260913160100_payment_workflow.sql
 The workflow migration provides:
 
 - Persistent checkout/status rate limiting.
-- `create_pending_order(...)`, which locks ticket types, checks the sale window and capacity, loads prices from the database, creates a ten-minute reservation and stores only the hash of the order access token.
+- `create_pending_order(...)`, retained for historical compatibility.
+- `create_hyperview_pending_order(...)`, which locks General Admission, checks the sale window/capacity/policy acceptance, calculates the effective weekday/weekend price, creates a ten-minute reservation and stores only the hash of the order access token.
 - `process_paystack_charge_success(...)`, which atomically records a payment, prevents duplicate webhook processing and issues exactly the purchased number of tickets.
 - A `payment_review` state for a successful but mismatched or no-longer-fulfillable payment. This prevents silent overbooking and allows an admin to investigate/refund it.
 - `get_order_status_by_token(...)`, which exposes an order only when the caller supplies the correct secret token.
@@ -750,7 +773,8 @@ Request:
     "name": "Amina Bello",
     "email": "amina@example.com",
     "phone": "+2348000000000"
-  }
+  },
+  "policy": { "version": "hyperview-booking-v1", "accepted": true }
 }
 ```
 
@@ -758,7 +782,7 @@ The implemented function:
 
 1. Validate types, email, phone, quantity and request size.
 2. Rate-limit repeated requests.
-3. Call `create_pending_order` so Postgres calculates availability and price.
+3. Call `create_hyperview_pending_order` so Postgres calculates availability and the date-effective price.
 4. Send the stored amount in kobo to Paystack's Initialize Transaction endpoint. For example, ₦5,000 is sent as `500000` kobo.
 5. Set the unique order reference and `${SITE_URL}/payment/callback`.
 6. Store only necessary metadata; do not put sensitive data in Paystack metadata.
@@ -790,8 +814,8 @@ This endpoint is public because Paystack calls it. The implemented handler:
 8. For each ticket, set:
    - `is_active = true`
    - `status = 'valid'`
-   - `valid_from` to the venue admission/opening time
-   - `valid_until` to midnight after the screening in the venue timezone
+   - `valid_from` to the configured admission opening time, 15 minutes before the session by default
+   - `valid_until` to the session end plus the configured operational grace period, 30 minutes by default
 9. Queue/send the ticket email only after the payment transaction commits.
 10. Return HTTP 200 quickly so Paystack does not repeatedly retry a successfully handled event.
 
@@ -857,12 +881,12 @@ Request:
 The implemented verification algorithm:
 
 1. Validate the staff JWT.
-2. Check the caller's current `profiles.role` is `check_in_staff` or `admin`, matching `public.can_check_in()`; the SQL RPC checks that role again inside its transaction.
+2. Check the caller's current role. Cashiers may inspect bookings at reception; supervisors, legacy `check_in_staff` and admins may verify/admit individual tickets. The SQL RPC checks the role again inside its transaction.
 3. Call service-role-only `verify_ticket_staff`, which locks the ticket, joins its order, screening, movie, venue and ticket type, and writes an audit row.
 4. If no row exists, return HTTP 404 and `{ "valid": false, "reason": "not_found" }`.
 5. Confirm the order is paid and screening is not cancelled.
 6. Check `is_active`, ticket `status`, `valid_from` and `valid_until`.
-7. If `now() >= valid_until`, update the ticket to `status='expired', is_active=false`, then return it as expired.
+7. If `now() >= valid_until`, update an unused ticket to `status='no_show', is_active=false`.
 8. Return safe movie/screening/ticket details. Do not return Paystack payloads or unnecessary personal data.
 
 Valid response example:
@@ -897,6 +921,8 @@ Invalid responses should use stable reasons such as:
 - `not_found`
 - `not_yet_valid`
 - `expired`
+- `no_show`
+- `not_registered`
 - `already_used`
 - `cancelled`
 - `refunded`

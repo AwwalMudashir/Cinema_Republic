@@ -23,8 +23,8 @@ begin
   insert into public.venues(name,address,city,country)
   values ('Gate Venue','1 Test Road','Lagos','Nigeria') returning id into v_venue;
   insert into public.screenings(movie_id,venue_id,starts_at,ends_at,sales_start,sales_end,status)
-  values (v_movie,v_venue,now() + interval '1 hour',now() + interval '3 hours',
-    now() - interval '1 day',now() + interval '30 minutes','on_sale')
+  values (v_movie,v_venue,now() + interval '5 minutes',now() + interval '2 hours',
+    now() - interval '1 day',now() + interval '4 minutes','on_sale')
   returning id into v_screening;
   insert into public.ticket_types(screening_id,name,price_kobo,capacity)
   values (v_screening,'Standard',500000,10) returning id into v_type;
@@ -35,9 +35,9 @@ begin
   insert into public.order_items(order_id,ticket_type_id,quantity,unit_price_kobo)
   values (v_order,v_type,1,500000) returning id into v_item;
   insert into public.tickets(order_id,order_item_id,screening_id,ticket_type_id,
-    holder_name,holder_email,valid_from,valid_until)
+    holder_name,holder_email,valid_from,valid_until,arrived_at,registered_by)
   values (v_order,v_item,v_screening,v_type,'Amina Bello','amina@example.com',
-    now() - interval '1 minute',now() + interval '1 day')
+    now() - interval '1 minute',now() + interval '1 day',now(),v_staff)
   returning public_id into v_ticket;
 
   begin
@@ -74,8 +74,10 @@ begin
   values (v_order,v_item,v_screening,v_type,'Amina Bello','amina@example.com',
     now() - interval '2 days',now() - interval '1 hour')
   returning public_id into v_other_ticket;
+  update public.tickets set valid_from = now() - interval '2 days',
+    valid_until = now() - interval '1 hour' where public_id = v_other_ticket;
   v_result := public.verify_ticket_staff(v_other_ticket, v_staff);
-  if v_result->>'reason' <> 'expired' then raise exception 'Late ticket was accepted'; end if;
+  if v_result->>'reason' <> 'no_show' then raise exception 'Late ticket was accepted'; end if;
   if (select is_active from public.tickets where public_id = v_other_ticket) then
     raise exception 'Late ticket was not marked inactive';
   end if;

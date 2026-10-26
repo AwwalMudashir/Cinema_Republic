@@ -24,6 +24,10 @@ type CheckoutItem = {
 type CheckoutRequest = {
   screening_id: string;
   items: CheckoutItem[];
+  policy: {
+    version: string;
+    accepted: boolean;
+  };
   customer: {
     name: string;
     email: string;
@@ -65,7 +69,8 @@ function normalizeNigerianPhone(value: string): string | null {
 }
 
 function validateRequest(input: unknown): CheckoutRequest {
-  if (!isRecord(input) || !isRecord(input.customer) || !Array.isArray(input.items)) {
+  if (!isRecord(input) || !isRecord(input.customer) || !isRecord(input.policy)
+    || !Array.isArray(input.items)) {
     throw new HttpError(400, "invalid_request", "Checkout details are incomplete");
   }
 
@@ -76,8 +81,8 @@ function validateRequest(input: unknown): CheckoutRequest {
     throw new HttpError(400, "invalid_screening", "Select a valid screening");
   }
 
-  if (input.items.length < 1 || input.items.length > 8) {
-    throw new HttpError(400, "invalid_items", "Select between one and eight ticket types");
+  if (input.items.length !== 1) {
+    throw new HttpError(400, "invalid_items", "Select one general-admission ticket quantity");
   }
 
   const seenTicketTypes = new Set<string>();
@@ -124,10 +129,14 @@ function validateRequest(input: unknown): CheckoutRequest {
   if (!phone) {
     throw new HttpError(400, "invalid_phone", "Enter a valid Nigerian phone number");
   }
+  if (input.policy.accepted !== true || input.policy.version !== "hyperview-booking-v1") {
+    throw new HttpError(400, "policy_not_accepted", "Accept the booking policy before payment");
+  }
 
   return {
     screening_id: screeningId,
     items,
+    policy: { version: "hyperview-booking-v1", accepted: true },
     customer: { name, email, phone },
   };
 }
@@ -145,6 +154,12 @@ function databaseError(error: { message?: string } | null): HttpError {
   }
   if (message.includes("INSUFFICIENT_CAPACITY")) {
     return new HttpError(409, "insufficient_capacity", "There are not enough tickets remaining");
+  }
+  if (message.includes("PRICE_RULE_NOT_FOUND")) {
+    return new HttpError(409, "price_unavailable", "Pricing has not been configured for this session");
+  }
+  if (message.includes("POLICY_NOT_ACCEPTED")) {
+    return new HttpError(400, "policy_not_accepted", "Accept the booking policy before payment");
   }
   if (message.includes("INVALID_")) {
     return new HttpError(400, "invalid_checkout", "The checkout details are invalid");
@@ -186,13 +201,16 @@ export default {
 
       const orderAccessToken = randomToken();
       const accessTokenHash = await hmacHex(hashSecret, orderAccessToken);
-      const { data, error } = await admin.rpc("create_pending_order", {
+      const policyAcceptedAt = new Date().toISOString();
+      const { data, error } = await admin.rpc("create_hyperview_pending_order", {
         p_screening_id: checkout.screening_id,
         p_items: checkout.items,
         p_customer_name: checkout.customer.name,
         p_customer_email: checkout.customer.email,
         p_customer_phone: checkout.customer.phone,
         p_access_token_hash: accessTokenHash,
+        p_policy_version: checkout.policy.version,
+        p_policy_accepted_at: policyAcceptedAt,
         p_user_id: null,
       });
 
@@ -219,7 +237,8 @@ export default {
             callback_url: `${getSiteUrl()}/payment/callback`,
             metadata: {
               order_id: order.order_id,
-              product: "movie_ticket",
+              product: "hyperview_session_booking",
+              policy_version: checkout.policy.version,
             },
           }),
           signal: AbortSignal.timeout(10_000),

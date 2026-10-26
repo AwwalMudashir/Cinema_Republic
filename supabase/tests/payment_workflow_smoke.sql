@@ -13,6 +13,7 @@ declare
   v_reference text;
   v_order_id uuid;
   v_count integer;
+  v_unit_price bigint;
 begin
   insert into public.movies (slug, title, synopsis, status)
   values ('payment-smoke-test', 'Payment Smoke Test', 'Temporary test movie', 'published')
@@ -44,7 +45,9 @@ begin
   values (v_screening_id, 'Standard', 500000, 2)
   returning id into v_ticket_type_id;
 
-  v_order := public.create_pending_order(
+  v_unit_price := public.price_for_screening(v_screening_id);
+
+  v_order := public.create_hyperview_pending_order(
     v_screening_id,
     jsonb_build_array(jsonb_build_object(
       'ticket_type_id', v_ticket_type_id,
@@ -54,15 +57,17 @@ begin
     'amina@example.com',
     '+2348012345678',
     repeat('a', 64),
+    'hyperview-booking-v1',
+    now(),
     null
   );
 
-  if (v_order->>'amount_kobo')::bigint <> 1000000 then
-    raise exception 'Expected database-calculated total of 1000000 kobo';
+  if (v_order->>'amount_kobo')::bigint <> v_unit_price * 2 then
+    raise exception 'Expected database-calculated effective session price';
   end if;
 
   begin
-    perform public.create_pending_order(
+    perform public.create_hyperview_pending_order(
       v_screening_id,
       jsonb_build_array(jsonb_build_object(
         'ticket_type_id', v_ticket_type_id,
@@ -72,6 +77,8 @@ begin
       'second@example.com',
       '+2348098765432',
       repeat('b', 64),
+      'hyperview-booking-v1',
+      now(),
       null
     );
     raise exception 'Expected capacity check to reject the second order';
@@ -88,7 +95,7 @@ begin
     'paystack:charge.success:' || v_reference,
     v_reference,
     v_reference,
-    1000000,
+    v_unit_price * 2,
     'NGN',
     jsonb_build_object('event', 'charge.success')
   );
@@ -101,7 +108,7 @@ begin
     'paystack:charge.success:' || v_reference,
     v_reference,
     v_reference,
-    1000000,
+    v_unit_price * 2,
     'NGN',
     jsonb_build_object('event', 'charge.success')
   );

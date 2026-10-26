@@ -142,7 +142,7 @@ export function AdminMovieForm() {
         <section className="admin-panel"><h2>Visibility</h2><label>Status<select value={movie.status} onChange={(e) => update('status', e.target.value)}>
           <option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option>
         </select></label><label className="admin-checkbox admin-featured-toggle"><input type="checkbox" checked={Boolean(movie.featured)} onChange={(e) => update('featured', e.target.checked)} /> Feature on site</label>
-          <p className="admin-help">Publishing alone does not sell tickets. Add a future on-sale screening and active ticket tiers.</p></section>
+          <p className="admin-help">Publishing alone does not accept bookings. Add a future scheduled session and its General Admission capacity.</p></section>
         {error && <p className="admin-error" role="alert">{error}</p>}
         <button className="admin-button admin-button--primary" disabled={busy}>{busy ? 'Saving…' : 'Save movie'}</button>
       </aside></form>}

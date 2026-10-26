@@ -61,7 +61,10 @@ export async function handleStaffGate(request: Request, action: GateAction): Pro
       .eq("id", auth.user.id)
       .maybeSingle();
     if (profileError) throw profileError;
-    if (profile?.role !== "check_in_staff" && profile?.role !== "admin") {
+    const allowedRoles = action === "redeem"
+      ? new Set(["supervisor", "check_in_staff", "admin"])
+      : new Set(["cashier", "supervisor", "check_in_staff", "admin"]);
+    if (!profile?.role || !allowedRoles.has(profile.role)) {
       throw new HttpError(403, "check_in_forbidden", "This account cannot check in guests");
     }
 

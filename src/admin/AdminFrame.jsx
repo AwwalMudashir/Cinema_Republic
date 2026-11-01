@@ -55,7 +55,8 @@ export default function AdminFrame() {
     {menuOpen && <button type="button" className="admin-scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
     <div className="admin-main">
       <header className="admin-topbar"><button type="button" className="admin-menu-button" aria-label="Toggle menu" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X /> : <Menu />}</button>
-        <span><ShieldCheck size={17} /> Secure operations</span><Link to="/movies">View public site ↗</Link></header>
+        <span><ShieldCheck size={17} /> Secure operations</span><div className="admin-topbar-actions"><Link to="/movies">View public site ↗</Link>
+          <button type="button" className="admin-topbar-signout" onClick={signOut}><LogOut size={15} /> Sign out</button></div></header>
       <Outlet />
     </div>
   </div>;

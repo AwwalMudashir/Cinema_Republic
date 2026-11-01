@@ -43,6 +43,7 @@ Deploy these additional Functions after applying the migrations:
 ```powershell
 npx.cmd supabase functions deploy booking-details
 npx.cmd supabase functions deploy staff-bookings
+npx.cmd supabase functions deploy admin-catalogue
 ```
 
 `booking-details` is public but returns only safe booking/session information and is rate-limited. `staff-bookings` keeps JWT verification enabled and rechecks cashier/supervisor/admin permissions server-side.
@@ -691,6 +692,7 @@ Admin capabilities:
 - Invite cashiers, supervisors and content managers and change or revoke their roles from `/admin/team`.
 - Retry a failed ticket email without changing the paid order.
 - View the latest Paystack refund event. Initiate refunds in Paystack Dashboard, not from this app; a confirmed full `refund.processed` webhook invalidates tickets. Partial refunds require manual review.
+- Permanently delete an unused session and then its movie only when no checkout, booking, payment or admission history exists. These actions are admin-only, transactional and audited. If history exists, cancel future sessions as needed and archive the movie; never delete customer/payment history.
 
 Before using Team invitations, set Supabase Dashboard -> Authentication -> URL Configuration -> Site URL to `https://cinemarepublicnaija.com` and allow `https://cinemarepublicnaija.com/admin/login?invite=1` as a redirect URL. Staff invitations use Supabase Auth email delivery, which is separate from Resend ticket mail; configure Auth SMTP for reliable real-world invitations. Invitees follow the link to set a password of at least 12 characters. An admin account must first be bootstrapped once with the SQL in section 4; the app intentionally cannot create its first admin.
 

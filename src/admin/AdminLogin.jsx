@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Clapperboard, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Clapperboard, Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAdminAuth } from './auth-context';
@@ -13,6 +13,8 @@ export default function AdminLogin() {
   const requested = params.get('next') || '/admin';
   const next = requested.startsWith('/admin/') && !requested.startsWith('//') ? requested : '/admin';
   const [form, setForm] = useState({ email: '', password: '', confirm: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -44,8 +46,14 @@ export default function AdminLogin() {
       <h2>{invite && session ? 'Set your password' : 'Welcome back'}</h2>
       <p>{invite && session ? 'Finish activating your invited account.' : 'Sign in with your Cinema Republic staff account.'}</p>
       {(!invite || !session) && <label>Email address<input type="email" autoComplete="username" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>}
-      <label>Password<input type="password" minLength={invite && session ? 12 : undefined} autoComplete={invite && session ? 'new-password' : 'current-password'} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
-      {invite && session && <label>Confirm password<input type="password" autoComplete="new-password" required value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} /></label>}
+      <label>Password<div className="admin-password-field"><input type={showPassword ? 'text' : 'password'} minLength={invite && session ? 12 : undefined} autoComplete={invite && session ? 'new-password' : 'current-password'} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+        <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword((visible) => !visible)}>
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button></div></label>
+      {invite && session && <label>Confirm password<div className="admin-password-field"><input type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" required value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
+        <button type="button" aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'} aria-pressed={showConfirmPassword} onClick={() => setShowConfirmPassword((visible) => !visible)}>
+          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button></div></label>}
       {(message || authError) && <p className="admin-error" role="alert">{message || authError}</p>}
       <button className="admin-button admin-button--primary" disabled={busy || loading || !supabase}>{busy ? 'Please wait…' : invite && session ? 'Activate account' : 'Sign in'} <ArrowRight size={17} /></button>
       <small>Access problems? Ask your administrator to check your account and role.</small>

@@ -170,6 +170,7 @@ Do **not** enable public checkout directly in production. Reactivate it in stagi
    npx.cmd supabase functions deploy staff-bookings
    npx.cmd supabase functions deploy admin-team
    npx.cmd supabase functions deploy admin-orders
+   npx.cmd supabase functions deploy admin-catalogue
    ```
 
 5. Confirm the Paystack **test-mode** webhook points to:
@@ -201,6 +202,7 @@ Keep `PUBLIC_TICKETING_ENABLED` false. Deploy to staging and verify:
 - Order listing and email retry.
 - Reception booking retrieval and arrival registration.
 - Supervisor verification and one-time admission.
+- Admin-only safe deletion: remove an unused session first, then delete its movie only when no checkout, payment, ticket or admission history exists. Otherwise archive the movie and retain the history.
 
 This order allows staff to prepare catalogue data without exposing checkout to customers.
 

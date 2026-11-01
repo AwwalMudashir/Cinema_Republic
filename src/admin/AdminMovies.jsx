@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Clapperboard, ImagePlus, Pencil, Plus, Search } from 'lucide-react';
+import { ArrowLeft, Clapperboard, ImagePlus, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { posterUrl } from '../lib/catalog';
 import { supabase } from '../lib/supabase';
 import { useAdminAuth } from './auth-context';
 import { assertResult, uploadPoster } from './catalogue';
+import { adminFunction } from './api';
 import { clearDraft, draftKey, readDraft, saveDraft } from './drafts';
 
 const emptyMovie = { title: '', slug: '', tagline: '', synopsis: '', genre: '', rating: '', language: 'English', runtime_minutes: '', status: 'draft', featured: false, poster_path: '' };
@@ -37,7 +38,7 @@ export function AdminMovieForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isNew = id === 'new';
-  const { session } = useAdminAuth();
+  const { session, profile } = useAdminAuth();
   const movieDraftKey = draftKey(session.user.id, 'movie', id);
   const [movie, setMovie] = useState(() => isNew ? readDraft(movieDraftKey)?.movie ?? emptyMovie : emptyMovie);
   const [poster, setPoster] = useState(null);
@@ -47,6 +48,7 @@ export function AdminMovieForm() {
   const [loading, setLoading] = useState(!isNew);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
   useEffect(() => {
     if (isNew) return undefined;
     let active = true;
@@ -117,6 +119,16 @@ export function AdminMovieForm() {
     } catch (caught) { setError(caught.message); }
     finally { setBusy(false); }
   }
+  async function deleteMovie() {
+    if (isNew || !window.confirm(`Permanently delete “${movie.title}”? This succeeds only when no sessions or booking history depend on it.`)) return;
+    setBusy(true); setDeleteError(''); setError('');
+    try {
+      await adminFunction('admin-catalogue', { action: 'delete_movie', movie_id: id });
+      clearDraft(movieDraftKey);
+      navigate('/admin/movies', { replace: true });
+    } catch (caught) { setDeleteError(caught.message); }
+    finally { setBusy(false); }
+  }
   return <main className="admin-content"><div className="admin-page-header"><Link className="admin-back" to="/admin/movies"><ArrowLeft size={16} /> Movie library</Link>
     <p className="admin-overline">Catalogue / {isNew ? 'New film' : 'Edit film'}</p><h1>{isNew ? 'Add a movie' : movie.title}</h1><p>Keep credits, imagery and descriptions accurate and approved.</p></div>
     {loading ? <p>Loading film…</p> : <form className="admin-form-grid" onSubmit={save}>
@@ -143,6 +155,12 @@ export function AdminMovieForm() {
           <option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option>
         </select></label><label className="admin-checkbox admin-featured-toggle"><input type="checkbox" checked={Boolean(movie.featured)} onChange={(e) => update('featured', e.target.checked)} /> Feature on site</label>
           <p className="admin-help">Publishing alone does not accept bookings. Add a future scheduled session and its General Admission capacity.</p></section>
+        {!isNew && profile?.role === 'admin' && <section className="admin-panel admin-danger-zone"><h2>Delete movie</h2>
+          <p>Permanent deletion is allowed only when this movie has no sessions, checkout records or issued admissions. If customer history exists, archive it instead.</p>
+          <button className="admin-button admin-button--danger" type="button" disabled={busy} onClick={deleteMovie}><Trash2 size={16} /> {busy ? 'Checking…' : 'Delete movie'}</button>
+          <small>Uploaded artwork is retained in Storage to avoid destroying a shared asset.</small>
+          {deleteError && <p className="admin-error" role="alert">{deleteError}</p>}
+        </section>}
         {error && <p className="admin-error" role="alert">{error}</p>}
         <button className="admin-button admin-button--primary" disabled={busy}>{busy ? 'Saving…' : 'Save movie'}</button>
       </aside></form>}

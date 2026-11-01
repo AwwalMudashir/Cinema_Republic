@@ -488,3 +488,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/staff-bookings/deno.json"
 entrypoint = "./functions/staff-bookings/index.ts"
+
+[functions.admin-catalogue]
+enabled = true
+verify_jwt = true
+import_map = "./functions/admin-catalogue/deno.json"
+entrypoint = "./functions/admin-catalogue/index.ts"

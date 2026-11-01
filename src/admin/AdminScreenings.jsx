@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CalendarDays, CalendarPlus2, Pencil, Plus, Ticket } from 'lucide-react';
+import { ArrowLeft, CalendarDays, CalendarPlus2, Pencil, Plus, Ticket, Trash2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { formatKobo, formatShowing } from '../lib/catalog';
 import { supabase } from '../lib/supabase';
 import { useAdminAuth } from './auth-context';
 import { assertResult, fromLagosInput, toLagosInput } from './catalogue';
+import { adminFunction } from './api';
 import { clearDraft, draftKey, readDraft, saveDraft } from './drafts';
 
 const emptyScreening = { movie_id: '', venue_id: '', starts_at: '', ends_at: '', sales_start: '', sales_end: '', status: 'draft', admission_opens_minutes: 15, admission_grace_minutes: 30 };
@@ -100,7 +101,7 @@ export function AdminScreeningForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isNew = id === 'new';
-  const { session } = useAdminAuth();
+  const { session, profile } = useAdminAuth();
   const screeningDraftKey = draftKey(session.user.id, 'screening', id);
   const tierDraftKey = draftKey(session.user.id, 'ticket-tier', id);
   const [screening, setScreening] = useState(() => isNew ? readDraft(screeningDraftKey) ?? emptyScreening : emptyScreening);
@@ -112,6 +113,7 @@ export function AdminScreeningForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [deleteError, setDeleteError] = useState('');
   const update = (key, value) => {
     const next = { ...screening, [key]: value };
     setScreening(next);
@@ -211,6 +213,16 @@ export function AdminScreeningForm() {
     } catch (caught) { setError(caught.message); }
     finally { setBusy(false); }
   }
+  async function deleteScreening() {
+    if (isNew || !window.confirm('Permanently delete this session? This succeeds only when no checkout or booking history depends on it.')) return;
+    setBusy(true); setDeleteError(''); setError(''); setNotice('');
+    try {
+      await adminFunction('admin-catalogue', { action: 'delete_screening', screening_id: id });
+      clearDraft(screeningDraftKey); clearDraft(tierDraftKey);
+      navigate('/admin/screenings', { replace: true });
+    } catch (caught) { setDeleteError(caught.message); }
+    finally { setBusy(false); }
+  }
 
   return <main className="admin-content"><div className="admin-page-header"><Link className="admin-back" to="/admin/screenings"><ArrowLeft size={16} /> Sessions</Link>
     <p className="admin-overline">Programme / {isNew ? 'New session' : 'Edit session'}</p><h1>{isNew ? 'Add a session' : 'Session setup'}</h1>
@@ -244,7 +256,13 @@ export function AdminScreeningForm() {
             <div className="admin-inline-actions"><button className="admin-button" disabled={busy || (!tier.id && tiers.length > 0)}><Ticket size={16} /> {tier.id ? 'Update admission' : 'Add admission'}</button>
               {tier.id && <button type="button" className="admin-link-button" onClick={() => { setTier(emptyTier); clearDraft(tierDraftKey); }}>Cancel edit</button>}</div>
           </form></>}
-      </section><div className="admin-note"><strong>Automatic pricing</strong><p>The price is selected from Pricing using the session's Lagos date: weekday Monday–Friday, weekend Saturday–Sunday. Capacity is the number of people who can book this session.</p></div></div>
+      </section><div className="admin-note"><strong>Automatic pricing</strong><p>The price is selected from Pricing using the session's Lagos date: weekday Monday–Friday, weekend Saturday–Sunday. Capacity is the number of people who can book this session.</p></div>
+        {!isNew && profile?.role === 'admin' && <section className="admin-panel admin-danger-zone"><h2>Delete session</h2>
+          <p>Use this only for an unused session created by mistake. Sessions with checkout, payment or admission history must be cancelled and retained.</p>
+          <button className="admin-button admin-button--danger" type="button" disabled={busy} onClick={deleteScreening}><Trash2 size={16} /> {busy ? 'Checking…' : 'Delete unused session'}</button>
+          {deleteError && <p className="admin-error" role="alert">{deleteError}</p>}
+        </section>}
+      </div>
     </div>}
   </main>;
 }

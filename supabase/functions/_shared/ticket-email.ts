@@ -21,7 +21,8 @@ export type FulfilledOrder = {
   amount_kobo: number | string;
   currency: string;
   quantity: number | string;
-  movie_title: string;
+  session_title?: string;
+  movie_title?: string;
   starts_at: string;
   ends_at: string;
   valid_from: string;
@@ -62,11 +63,12 @@ function formatNaira(amountKobo: number | string): string {
 
 function textVersion(order: FulfilledOrder, siteUrl: string): string {
   const bookingUrl = `${siteUrl}/booking/${order.booking_public_id}`;
+  const sessionTitle = order.session_title || order.movie_title || "HyperView 9D session";
 
   return [
     `Hi ${order.customer_name},`,
     "",
-    `Your full payment for ${order.movie_title} was successful.`,
+    `Your full payment for ${sessionTitle} was successful.`,
     `Booking reference: ${order.reference}`,
     `Contact: ${order.customer_email} · ${order.customer_phone}`,
     `Guests: ${order.quantity}`,
@@ -78,8 +80,9 @@ function textVersion(order: FulfilledOrder, siteUrl: string): string {
     "",
     `Open booking: ${bookingUrl}`,
     "",
+    "This 30-minute session includes two 15-minute films selected and played by staff at the centre.",
     "Arrive at least 15 minutes before the session. Reception will verify this booking and issue physical identification tags.",
-    "The booking is valid only for this session. It is non-refundable and cannot be rescheduled.",
+    "The booking is valid only for the selected session. It is non-refundable and cannot be rescheduled.",
     "Keep the booking link and QR code private.",
   ].join("\n");
 }
@@ -110,6 +113,7 @@ export async function sendTicketEmail(
   if (claimError) throw new Error(`Could not update email delivery: ${claimError.message}`);
 
   const siteUrl = getSiteUrl();
+  const sessionTitle = order.session_title || order.movie_title || "HyperView 9D session";
   const bookingUrl = `${siteUrl}/booking/${order.booking_public_id}`;
   const dataUrl = await QRCode.toDataURL(bookingUrl, {
     errorCorrectionLevel: "M",
@@ -124,20 +128,19 @@ export async function sendTicketEmail(
     content_id: contentId,
     content_type: "image/png",
   }];
-
   const html = `<!doctype html>
   <html>
     <body style="margin:0;background:#f5f1e8;font-family:Arial,sans-serif;color:#171612;">
       <div style="max-width:640px;margin:0 auto;padding:32px 18px;">
         <div style="background:#171612;color:#fff;padding:22px 26px;border-radius:18px 18px 0 0;">
           <p style="margin:0;color:#d8ad62;font-size:12px;letter-spacing:2px;text-transform:uppercase;">Cinema 57</p>
-          <h1 style="margin:8px 0 0;font-size:28px;">Your HyperView session is booked</h1>
+          <h1 style="margin:8px 0 0;font-size:28px;">Your HyperView booking is confirmed</h1>
         </div>
         <div style="background:#fcfaf5;padding:26px;border-radius:0 0 18px 18px;">
           <p style="margin-top:0;">Hi ${escapeHtml(order.customer_name)},</p>
           <p>Your full payment was successful. Present this booking QR code at reception.</p>
           <div style="padding:18px;background:#efe8da;border-radius:12px;line-height:1.7;">
-            <strong>${escapeHtml(order.movie_title)}</strong><br />
+            <strong>${escapeHtml(sessionTitle)}</strong><br />
             ${escapeHtml(formatDateTime(order.starts_at, order.venue_timezone))}<br />
             ${escapeHtml(order.venue_name)}, ${escapeHtml(order.venue_address)}, ${escapeHtml(order.venue_city)}<br />
             Booking reference: ${escapeHtml(order.reference)}<br />
@@ -145,6 +148,10 @@ export async function sendTicketEmail(
             Contact: ${escapeHtml(order.customer_email)} · ${escapeHtml(order.customer_phone)}<br />
             Guests: ${escapeHtml(order.quantity)}<br />
             Total paid: ${escapeHtml(formatNaira(order.amount_kobo))}
+          </div>
+          <div style="margin:20px 0;padding:18px;background:#f7f3ea;border-radius:12px;line-height:1.7;">
+            <strong>What your session includes</strong><br />
+            One 30-minute HyperView experience with two 15-minute films selected and played by staff at the centre.
           </div>
           <div style="margin:20px 0;padding:22px;border:1px solid #e7e2d8;border-radius:16px;background:#fff;text-align:center;">
             <p style="margin:0 0 4px;color:#6b665d;font-size:12px;text-transform:uppercase;letter-spacing:1.5px;">Booking QR</p>

@@ -1,28 +1,33 @@
 # HyperView Online Booking Reactivation and Operations Guide
 
-Last updated: 19 October 2026
+Last updated: 4 November 2026
 
 ## 1. Current decision and release state
 
-Cinema Republic has approved restarting development of online booking for **HyperView 9D Flying Cinema**. The upgraded implementation is session-based: the customer purchases places for one experience, date and time, rather than buying a reusable general-entry ticket.
+Cinema Republic has approved restarting development of online booking for **HyperView 9D Flying Cinema**. The current implementation is session-only: the customer purchases places for one date and time, rather than selecting a movie or buying a reusable general-entry ticket.
 
-The implementation is present, but both switches remain `false` by default so it cannot become public before the staging migration, Edge Function deployment and acceptance tests are complete:
+The implementation is present. Both switches are currently enabled in this working/staging branch for end-to-end testing:
 
 ```js
-export const PUBLIC_TICKETING_ENABLED = false;
-export const TICKETING_ADMIN_ENABLED = false;
+export const PUBLIC_TICKETING_ENABLED = true;
+export const TICKETING_ADMIN_ENABLED = true;
 ```
 
-Enable the admin switch on staging first. Enable the public switch only after pricing, sessions, Paystack test payments, email, reception and admission have all passed.
+Keep Paystack in test mode while this branch is under acceptance testing. Before merging to production, confirm pricing, sessions, Paystack payment, email, reception and admission have all passed on staging; otherwise turn the public switch back off.
 
 ## 1.1 Approved HyperView business rules
 
-- Every booking is tied to one specific experience, date and session time.
+- Every booking is tied to one specific 30-minute session, date and time.
+- Customers do not select movies. Staff select and play two 15-minute films during the booked session.
 - Full payment is collected online through Paystack; there is no outstanding balance at reception.
-- Monday–Friday admission is **₦10,500 per person**.
-- Saturday–Sunday admission is **₦12,500 per person**.
+- Monday–Thursday individual admission is **₦10,500 per person**.
+- Friday–Sunday individual admission is **₦12,500 per person**.
 - Prices are effective-dated database rules and can be changed for November 2026 without a frontend deployment.
 - One **General admission** inventory is used per session. Its capacity is the number of people who can buy that session.
+- One physical venue can have only one active session at a time; overlapping time slots are rejected by the database.
+- One online checkout can reserve 1–15 admissions, subject to the session's remaining capacity. This is a checkout safety limit, not a separate group product.
+- Business weekdays are **Monday–Thursday**; business weekends are **Friday–Sunday**.
+- A session may select an active pricing rule explicitly (for example, a promotion). If no rule is selected, the active venue/global rule whose effective dates include the session date is used.
 - A pending Paystack checkout holds capacity for approximately ten minutes. This is not the customer's ticket expiry.
 - Admission opens 15 minutes before the selected session by default.
 - The booking expires after the selected session ends plus the configured operational grace period, 30 minutes by default.
@@ -115,12 +120,14 @@ Do not delete the disabled pages, components or styles. In particular, preserve:
 
 Important additions for the HyperView workflow are:
 
-- `src/admin/AdminPricing.jsx` — effective weekday/weekend pricing.
+- `src/admin/AdminPricing.jsx` — per-person pricing for Monday–Thursday and Friday–Sunday.
 - `src/admin/AdminReception.jsx` — paid-booking lookup and arrival registration.
-- `supabase/functions/booking-details/` — safe public group-booking display.
+- `supabase/functions/booking-details/` — safe public booking display.
 - `supabase/functions/staff-bookings/` — authenticated reception operations.
 - `supabase/migrations/20261019090000_hyperview_enum_values.sql` — new staff/session statuses.
 - `supabase/migrations/20261019091000_hyperview_session_booking.sql` — pricing, validity, operations and automation.
+- `supabase/migrations/20261104120000_session_pricing_and_group_packages.sql` — pricing-rule foundation and Friday weekend pricing.
+- `supabase/migrations/20261104130000_session_only_booking.sql` — current movie-free, fixed-30-minute session product and checkout functions.
 
 ## 4. Safe reactivation sequence
 
@@ -180,7 +187,7 @@ Do **not** enable public checkout directly in production. Reactivate it in stagi
    ```
 
 6. Confirm the pending-order job is active. Also confirm a job named `sync-hyperview-sessions` runs every minute with `select public.sync_hyperview_operations();`. The migration creates it automatically when Cron is already enabled; otherwise add it in Dashboard after enabling Cron.
-7. Add one complete test programme: published HyperView experience, poster, active venue, effective pricing rule, future scheduled session and General Admission capacity.
+7. Add one complete test programme: active venue, effective pricing rule, future 30-minute session and Session admission capacity. No movie or poster record is required.
 8. Confirm staging admin/staff accounts and role assignments.
 
 ### Phase C — enable the admin workspace on staging
@@ -202,7 +209,7 @@ Keep `PUBLIC_TICKETING_ENABLED` false. Deploy to staging and verify:
 - Order listing and email retry.
 - Reception booking retrieval and arrival registration.
 - Supervisor verification and one-time admission.
-- Admin-only safe deletion: remove an unused session first, then delete its movie only when no checkout, payment, ticket or admission history exists. Otherwise archive the movie and retain the history.
+- Admin-only safe deletion: remove an unused session only when no checkout, payment, ticket or admission history exists. Otherwise cancel it and retain the history.
 
 This order allows staff to prepare catalogue data without exposing checkout to customers.
 
@@ -214,25 +221,26 @@ After the admin tests pass, change:
 export const PUBLIC_TICKETING_ENABLED = true;
 ```
 
-Deploy to staging and confirm that Movies, ticket buttons, footer promotion and the home preview return automatically.
+Deploy to staging and confirm that Sessions, ticket buttons, footer promotion and the home preview return automatically.
 
 Run the complete customer test matrix:
 
-1. Browse published experiences and future scheduled sessions.
+1. Browse future scheduled sessions; confirm no movie or genre selection appears.
 2. Verify coming-soon, sold-out and available states.
-3. Confirm Monday–Friday sessions show ₦10,500 and Saturday–Sunday sessions show ₦12,500.
-4. Select a General Admission quantity and confirm the database recalculates the total in naira/kobo.
-5. Complete a Paystack test payment.
-6. Return to `/payment/callback` on the same staging hostname.
-7. Confirm webhook processing creates only one payment and one set of tickets.
-8. Confirm the booking email contains reference, contact, session, quantity, total paid, arrival instructions, expiry and a booking QR.
-9. Open `/booking/:publicId` and confirm no private customer data is exposed.
-10. Search/scan the booking as a cashier and register the party at reception.
-11. Verify an individual admission as a supervisor without consuming it.
-12. Redeem it once and confirm the second redemption returns `already_used`.
-13. Confirm an admission cannot be redeemed before reception registration.
-14. Test failed, abandoned, duplicate-webhook, expired-order, full-session, no-show and invalid-ticket cases.
-15. Test on mobile and desktop.
+3. Confirm Monday–Thursday sessions show the configured weekday price and Friday–Sunday sessions show the configured weekend price.
+4. Select an explicit promotional rule on one session and confirm its per-person price overrides the automatic effective rule.
+5. Select a Session admission quantity and confirm the database recalculates the total in naira/kobo.
+6. Complete a Paystack test payment.
+7. Return to `/payment/callback` on the same staging hostname.
+8. Confirm webhook processing creates only one payment and one set of tickets.
+9. Confirm the booking email contains reference, session, quantity, total paid, arrival instructions, expiry and a booking QR.
+10. Open `/booking/:publicId` and confirm no private customer data is exposed.
+11. Search/scan the booking as a cashier and register the party at reception.
+12. Verify an individual admission as a supervisor without consuming it.
+13. Redeem it once and confirm the second redemption returns `already_used`.
+14. Confirm an admission cannot be redeemed before reception registration.
+15. Test failed, abandoned, duplicate-webhook, expired-order, full-session, no-show and invalid-ticket cases.
+16. Test on mobile and desktop.
 
 ### Phase E — prepare production services
 

@@ -78,11 +78,11 @@ function validateRequest(input: unknown): CheckoutRequest {
     ? input.screening_id.trim()
     : "";
   if (!UUID_PATTERN.test(screeningId)) {
-    throw new HttpError(400, "invalid_screening", "Select a valid screening");
+    throw new HttpError(400, "invalid_screening", "Select a valid session");
   }
 
   if (input.items.length !== 1) {
-    throw new HttpError(400, "invalid_items", "Select one general-admission ticket quantity");
+    throw new HttpError(400, "invalid_items", "Select one session-admission quantity");
   }
 
   const seenTicketTypes = new Set<string>();
@@ -97,7 +97,9 @@ function validateRequest(input: unknown): CheckoutRequest {
       : "";
     const quantity = value.quantity;
 
-    if (!UUID_PATTERN.test(ticketTypeId) || !Number.isInteger(quantity) || Number(quantity) < 1 || Number(quantity) > 8) {
+    const validQuantity = Number.isInteger(quantity)
+      && Number(quantity) >= 1 && Number(quantity) <= 15;
+    if (!UUID_PATTERN.test(ticketTypeId) || !validQuantity) {
       throw new HttpError(400, "invalid_items", "A ticket selection is invalid");
     }
     if (seenTicketTypes.has(ticketTypeId)) {
@@ -109,8 +111,8 @@ function validateRequest(input: unknown): CheckoutRequest {
     return { ticket_type_id: ticketTypeId, quantity: Number(quantity) };
   });
 
-  if (totalQuantity > 8) {
-    throw new HttpError(400, "too_many_tickets", "A maximum of eight tickets is allowed per order");
+  if (totalQuantity > 15) {
+    throw new HttpError(400, "too_many_tickets", "A maximum of 15 tickets is allowed per order");
   }
 
   const name = typeof input.customer.name === "string" ? input.customer.name.trim() : "";
@@ -129,14 +131,14 @@ function validateRequest(input: unknown): CheckoutRequest {
   if (!phone) {
     throw new HttpError(400, "invalid_phone", "Enter a valid Nigerian phone number");
   }
-  if (input.policy.accepted !== true || input.policy.version !== "hyperview-booking-v1") {
+  if (input.policy.accepted !== true || input.policy.version !== "hyperview-session-v3") {
     throw new HttpError(400, "policy_not_accepted", "Accept the booking policy before payment");
   }
 
   return {
     screening_id: screeningId,
     items,
-    policy: { version: "hyperview-booking-v1", accepted: true },
+    policy: { version: "hyperview-session-v3", accepted: true },
     customer: { name, email, phone },
   };
 }
@@ -144,10 +146,10 @@ function validateRequest(input: unknown): CheckoutRequest {
 function databaseError(error: { message?: string } | null): HttpError {
   const message = error?.message ?? "";
   if (message.includes("SCREENING_NOT_FOUND")) {
-    return new HttpError(404, "screening_not_found", "The screening was not found");
+    return new HttpError(404, "screening_not_found", "The session was not found");
   }
   if (message.includes("SCREENING_NOT_ON_SALE") || message.includes("SALES_CLOSED")) {
-    return new HttpError(409, "sales_closed", "Tickets are not currently on sale for this screening");
+    return new HttpError(409, "sales_closed", "Bookings are not currently open for this session");
   }
   if (message.includes("TICKET_TYPE_NOT_AVAILABLE")) {
     return new HttpError(409, "ticket_unavailable", "A selected ticket type is no longer available");
@@ -202,7 +204,7 @@ export default {
       const orderAccessToken = randomToken();
       const accessTokenHash = await hmacHex(hashSecret, orderAccessToken);
       const policyAcceptedAt = new Date().toISOString();
-      const { data, error } = await admin.rpc("create_hyperview_pending_order", {
+      const { data, error } = await admin.rpc("create_hyperview_session_order_v3", {
         p_screening_id: checkout.screening_id,
         p_items: checkout.items,
         p_customer_name: checkout.customer.name,

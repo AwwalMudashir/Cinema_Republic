@@ -8,27 +8,32 @@ import { assertResult, fromLagosInput, toLagosInput } from './catalogue';
 import { adminFunction } from './api';
 import { clearDraft, draftKey, readDraft, saveDraft } from './drafts';
 
-const emptyScreening = { movie_id: '', venue_id: '', starts_at: '', ends_at: '', sales_start: '', sales_end: '', status: 'draft', admission_opens_minutes: 15, admission_grace_minutes: 30 };
-const emptyTier = { name: 'General admission', description: 'HyperView 9D Flying Cinema admission', capacity: '', is_active: true };
+const emptyScreening = { session_name: 'HyperView 9D Flying Cinema Session', venue_id: '', pricing_rule_id: '', starts_at: '', ends_at: '', sales_start: '', sales_end: '', status: 'draft', admission_opens_minutes: 15, admission_grace_minutes: 30 };
+const emptyTier = { name: 'Session admission', description: 'One 30-minute session with two 15-minute films', capacity: '', is_active: true };
 const screeningStatusLabels = { draft: 'Draft', on_sale: 'Scheduled', sold_out: 'Full', in_progress: 'In progress', cancelled: 'Cancelled', completed: 'Completed' };
 
 function SessionSeriesCreator() {
-  const [catalogue, setCatalogue] = useState({ movies: [], venues: [] });
-  const [form, setForm] = useState({ movie_id: '', venue_id: '', start_date: '', end_date: '', times: '10:00, 12:00, 14:00', duration: '20', capacity: '6', sales_start: '', open_sales: false });
+  const [catalogue, setCatalogue] = useState({ venues: [], pricingRules: [] });
+  const [form, setForm] = useState({ venue_id: '', pricing_rule_id: '', start_date: '', end_date: '', times: '10:00, 10:30, 11:00', capacity: '6', sales_start: '', open_sales: false });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   useEffect(() => {
     let active = true;
     Promise.all([
-      supabase.from('movies').select('id,title,status').neq('status', 'archived').order('title'),
       supabase.from('venues').select('id,name,is_active').eq('is_active', true).order('name'),
-    ]).then(([movies, venues]) => {
-      if (active) setCatalogue({ movies: assertResult(movies) || [], venues: assertResult(venues) || [] });
+      supabase.from('pricing_rules').select('id,name,venue_id,weekday_price_kobo,weekend_price_kobo,is_active').eq('is_active', true).order('name'),
+    ]).then(([venues, pricingRules]) => {
+      if (active) setCatalogue({ venues: assertResult(venues) || [], pricingRules: assertResult(pricingRules) || [] });
     }).catch((caught) => { if (active) setError(caught.message); });
     return () => { active = false; };
   }, []);
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const updateVenue = (venueId) => setForm((current) => {
+    const selectedRule = catalogue.pricingRules.find((rule) => rule.id === current.pricing_rule_id);
+    return { ...current, venue_id: venueId,
+      pricing_rule_id: selectedRule?.venue_id && selectedRule.venue_id !== venueId ? '' : current.pricing_rule_id };
+  });
 
   async function createSeries(event) {
     event.preventDefault(); setBusy(true); setError(''); setNotice('');
@@ -37,29 +42,30 @@ function SessionSeriesCreator() {
       if (!times.length || times.some((value) => !/^([01]\d|2[0-3]):[0-5]\d$/u.test(value))) {
         throw new Error('Enter session times as comma-separated 24-hour values, for example 10:00, 12:30.');
       }
-      const result = assertResult(await supabase.rpc('create_hyperview_session_series', {
-        p_movie_id: form.movie_id, p_venue_id: form.venue_id,
+      const result = assertResult(await supabase.rpc('create_hyperview_session_series_v3', {
+        p_venue_id: form.venue_id,
+        p_pricing_rule_id: form.pricing_rule_id || null,
         p_start_date: form.start_date, p_end_date: form.end_date, p_times: times,
-        p_duration_minutes: Number(form.duration), p_capacity: Number(form.capacity),
+        p_capacity: Number(form.capacity),
         p_sales_start: fromLagosInput(form.sales_start), p_open_sales: form.open_sales,
       }));
-      setNotice(`${result.created} session${result.created === 1 ? '' : 's'} created${result.skipped ? `; ${result.skipped} duplicate or past time${result.skipped === 1 ? '' : 's'} skipped` : ''}. Refresh the page to see them above.`);
+      setNotice(`${result.created} session${result.created === 1 ? '' : 's'} created${result.skipped ? `; ${result.skipped} past or conflicting time${result.skipped === 1 ? '' : 's'} skipped` : ''}. Refresh the page to see them above.`);
     } catch (caught) { setError(caught.message); }
     finally { setBusy(false); }
   }
 
   return <form className="admin-panel admin-series-form" onSubmit={createSeries}><div className="admin-panel-heading"><div><p className="admin-overline">Fast scheduling</p><h2>Create a session series</h2></div><CalendarPlus2 size={24} /></div>
-    <p>Create the same daily times across a date range. Each session receives one General Admission capacity and the correct weekday/weekend price.</p>
-    <div className="admin-fields"><label>Experience<select required value={form.movie_id} onChange={(e) => update('movie_id', e.target.value)}><option value="">Choose experience</option>{catalogue.movies.map((movie) => <option key={movie.id} value={movie.id}>{movie.title} · {movie.status}</option>)}</select></label>
-      <label>Venue<select required value={form.venue_id} onChange={(e) => update('venue_id', e.target.value)}><option value="">Choose venue</option>{catalogue.venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}</select></label>
+    <p>Create 30-minute sessions across a date range. Customers choose only the date and time; staff choose the two films at the centre.</p>
+    <div className="admin-fields"><label>Venue<select required value={form.venue_id} onChange={(e) => updateVenue(e.target.value)}><option value="">Choose venue</option>{catalogue.venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}</select></label>
+      <label className="admin-field-wide">Pricing rule<select value={form.pricing_rule_id} onChange={(e) => update('pricing_rule_id', e.target.value)}><option value="">Automatic rule for each date</option>
+        {catalogue.pricingRules.filter((rule) => !rule.venue_id || !form.venue_id || rule.venue_id === form.venue_id).map((rule) => <option key={rule.id} value={rule.id}>{rule.name} · {formatKobo(rule.weekday_price_kobo)} Mon–Thu / {formatKobo(rule.weekend_price_kobo)} Fri–Sun</option>)}</select></label>
       <label>First date<input required type="date" value={form.start_date} onChange={(e) => update('start_date', e.target.value)} /></label>
       <label>Last date<input required type="date" value={form.end_date} onChange={(e) => update('end_date', e.target.value)} /></label>
       <label className="admin-field-wide">Daily start times<input required value={form.times} onChange={(e) => update('times', e.target.value)} placeholder="10:00, 12:00, 14:00" /></label>
-      <label>Duration (minutes)<input required type="number" min="5" max="240" value={form.duration} onChange={(e) => update('duration', e.target.value)} /></label>
       <label>Capacity per session<input required type="number" min="1" max="500" value={form.capacity} onChange={(e) => update('capacity', e.target.value)} /></label>
       <label>Sales begin<input required type="datetime-local" value={form.sales_start} onChange={(e) => update('sales_start', e.target.value)} /></label>
       <label className="admin-checkbox"><input type="checkbox" checked={form.open_sales} onChange={(e) => update('open_sales', e.target.checked)} /> Open every generated session for sale immediately</label></div>
-    <p className="admin-help">A maximum of 32 dates and 12 times per day can be generated at once. Leave “open for sale” off if you want to review the sessions first.</p>
+    <p className="admin-help">Every generated session lasts exactly 30 minutes. A maximum of 32 dates and 12 times per day can be generated at once.</p>
     {error && <p className="admin-error" role="alert">{error}</p>}{notice && <p className="admin-success" role="status">{notice}</p>}
     <button className="admin-button admin-button--primary" disabled={busy}><CalendarPlus2 size={17} /> {busy ? 'Creating…' : 'Create session series'}</button>
   </form>;
@@ -72,7 +78,7 @@ export function AdminScreenings() {
   useEffect(() => {
     let active = true;
     Promise.all([
-      supabase.from('screenings').select('id,starts_at,ends_at,status,movies(title),venues(name),ticket_types(id)').order('starts_at', { ascending: false }),
+      supabase.from('screenings').select('id,session_name,starts_at,ends_at,status,venues(name),ticket_types(id)').is('movie_id', null).order('starts_at', { ascending: false }),
       supabase.rpc('catalogue_session_inventory'),
     ]).then(([screeningResult, inventoryResult]) => {
       if (!active) return;
@@ -84,13 +90,13 @@ export function AdminScreenings() {
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
-  return <main className="admin-content"><div className="admin-page-header admin-page-header--row"><div><p className="admin-overline">Catalogue / Programme</p><h1>Sessions</h1><p>Turn approved HyperView experiences into scheduled, capacity-controlled bookings.</p></div>
+  return <main className="admin-content"><div className="admin-page-header admin-page-header--row"><div><p className="admin-overline">Operations / Schedule</p><h1>Sessions</h1><p>Create the 30-minute time slots customers can reserve and pay for online.</p></div>
     <Link className="admin-button admin-button--primary" to="/admin/screenings/new"><Plus size={17} /> Add session</Link></div>
     {error && <p className="admin-error" role="alert">{error}</p>}
-    <div className="admin-panel"><h2>All showtimes <span className="admin-count">{rows.length}</span></h2>
-      {loading ? <p>Loading screenings…</p> : rows.length === 0 ? <div className="admin-empty"><CalendarDays size={32} /><h3>No screenings yet</h3><p>Choose a real venue and approved showtime to get started.</p></div> :
+    <div className="admin-panel"><h2>All sessions <span className="admin-count">{rows.length}</span></h2>
+      {loading ? <p>Loading sessions…</p> : rows.length === 0 ? <div className="admin-empty"><CalendarDays size={32} /><h3>No sessions yet</h3><p>Choose a venue and add the first available time slot.</p></div> :
         <div className="admin-list">{rows.map((row) => <Link key={row.id} to={`/admin/screenings/${row.id}`} className="admin-list-item">
-          <span className="admin-list-icon"><CalendarDays size={19} /></span><span><strong>{row.movies?.title || 'Experience'}</strong><small>{formatShowing(row.starts_at, 'Africa/Lagos', { dateStyle: 'medium', timeStyle: 'short' })} · {row.venues?.name || 'Venue'} · {row.inventory ? `${row.inventory.reserved}/${row.inventory.capacity} reserved · ${row.inventory.remaining} remaining` : 'Capacity not set'}</small></span>
+          <span className="admin-list-icon"><CalendarDays size={19} /></span><span><strong>{formatShowing(row.starts_at, 'Africa/Lagos', { dateStyle: 'medium', timeStyle: 'short' })}</strong><small>30-minute session · {row.venues?.name || 'Venue'} · {row.inventory ? `${row.inventory.reserved}/${row.inventory.capacity} reserved · ${row.inventory.remaining} remaining` : 'Capacity not set'}</small></span>
           <span className={`admin-status admin-status--${row.status}`}>{screeningStatusLabels[row.status] || row.status}</span><Pencil size={15} /></Link>)}</div>}
     </div>
     <SessionSeriesCreator />
@@ -105,8 +111,8 @@ export function AdminScreeningForm() {
   const screeningDraftKey = draftKey(session.user.id, 'screening', id);
   const tierDraftKey = draftKey(session.user.id, 'ticket-tier', id);
   const [screening, setScreening] = useState(() => isNew ? readDraft(screeningDraftKey) ?? emptyScreening : emptyScreening);
-  const [movies, setMovies] = useState([]);
   const [venues, setVenues] = useState([]);
+  const [pricingRules, setPricingRules] = useState([]);
   const [tiers, setTiers] = useState([]);
   const [tier, setTier] = useState(() => readDraft(tierDraftKey) ?? emptyTier);
   const [loading, setLoading] = useState(true);
@@ -116,6 +122,23 @@ export function AdminScreeningForm() {
   const [deleteError, setDeleteError] = useState('');
   const update = (key, value) => {
     const next = { ...screening, [key]: value };
+    setScreening(next);
+    saveDraft(screeningDraftKey, next);
+  };
+  const updateStart = (value) => {
+    let endsAt = '';
+    if (value) {
+      const start = new Date(`${value}:00+01:00`);
+      if (!Number.isNaN(start.getTime())) endsAt = toLagosInput(new Date(start.getTime() + 30 * 60_000).toISOString());
+    }
+    const next = { ...screening, starts_at: value, ends_at: endsAt };
+    setScreening(next);
+    saveDraft(screeningDraftKey, next);
+  };
+  const updateVenue = (venueId) => {
+    const selectedRule = pricingRules.find((rule) => rule.id === screening.pricing_rule_id);
+    const next = { ...screening, venue_id: venueId,
+      pricing_rule_id: selectedRule?.venue_id && selectedRule.venue_id !== venueId ? '' : screening.pricing_rule_id };
     setScreening(next);
     saveDraft(screeningDraftKey, next);
   };
@@ -132,20 +155,20 @@ export function AdminScreeningForm() {
     let active = true;
     async function load() {
       try {
-        const [movieRows, venueRows] = await Promise.all([
-          supabase.from('movies').select('id,title,status').neq('status', 'archived').order('title'),
+        const [venueRows, pricingRows] = await Promise.all([
           supabase.from('venues').select('id,name,is_active').order('name'),
+          supabase.from('pricing_rules').select('id,name,venue_id,weekday_price_kobo,weekend_price_kobo,is_active').order('name'),
         ]);
-        const m = assertResult(movieRows); const v = assertResult(venueRows);
-        if (active) { setMovies(m || []); setVenues(v || []); }
+        const v = assertResult(venueRows); const p = assertResult(pricingRows);
+        if (active) { setVenues(v || []); setPricingRules(p || []); }
         if (!isNew) {
           const [screeningResult, tierResult] = await Promise.all([
-            supabase.from('screenings').select('*').eq('id', id).single(),
+            supabase.from('screenings').select('*').eq('id', id).is('movie_id', null).single(),
             supabase.from('ticket_types').select('*').eq('screening_id', id).order('price_kobo'),
           ]);
           const row = assertResult(screeningResult);
           if (active) {
-            const savedScreening = { ...row, starts_at: toLagosInput(row.starts_at), ends_at: toLagosInput(row.ends_at),
+            const savedScreening = { ...row, pricing_rule_id: row.pricing_rule_id || '', starts_at: toLagosInput(row.starts_at), ends_at: toLagosInput(row.ends_at),
               sales_start: toLagosInput(row.sales_start), sales_end: toLagosInput(row.sales_end) };
             setScreening(readDraft(screeningDraftKey) ?? savedScreening);
             setTier(readDraft(tierDraftKey) ?? emptyTier);
@@ -162,31 +185,38 @@ export function AdminScreeningForm() {
   async function saveScreening(event) {
     event.preventDefault(); setBusy(true); setError(''); setNotice('');
     try {
-      const values = { movie_id: screening.movie_id, venue_id: screening.venue_id,
+      const values = { movie_id: null, session_name: 'HyperView 9D Flying Cinema Session', venue_id: screening.venue_id,
+        pricing_rule_id: screening.pricing_rule_id || null,
         starts_at: fromLagosInput(screening.starts_at), ends_at: fromLagosInput(screening.ends_at),
         sales_start: fromLagosInput(screening.sales_start), sales_end: fromLagosInput(screening.sales_end), status: screening.status,
         admission_opens_minutes: Number(screening.admission_opens_minutes),
         admission_grace_minutes: Number(screening.admission_grace_minutes),
         updated_at: new Date().toISOString() };
-      if (!values.movie_id || !values.venue_id) throw new Error('Select a movie and venue.');
-      if (values.ends_at <= values.starts_at) throw new Error('The screening must end after it starts.');
+      if (!values.venue_id) throw new Error('Select a venue.');
+      if (values.pricing_rule_id) {
+        const selectedRule = pricingRules.find((rule) => rule.id === values.pricing_rule_id);
+        if (!selectedRule?.is_active) throw new Error('Choose an active pricing rule.');
+        if (selectedRule.venue_id && selectedRule.venue_id !== values.venue_id) {
+          throw new Error('The selected pricing rule belongs to a different venue.');
+        }
+      }
+      if (values.ends_at <= values.starts_at) throw new Error('The session must end after it starts.');
       if (values.sales_end <= values.sales_start) throw new Error('Sales must end after they start.');
-      if (values.sales_end > values.starts_at) throw new Error('Sales must end by the screening start time.');
+      if (values.sales_end > values.starts_at) throw new Error('Sales must end by the session start time.');
       if (!Number.isInteger(values.admission_opens_minutes) || values.admission_opens_minutes < 0
         || !Number.isInteger(values.admission_grace_minutes) || values.admission_grace_minutes < 0) {
         throw new Error('Enter valid admission timing values.');
       }
       if (values.status === 'completed' && values.ends_at > new Date().toISOString()) {
-        throw new Error('Mark a screening completed only after it has ended.');
+        throw new Error('A session can be completed only after it has ended.');
       }
       if (values.status === 'on_sale') {
-        const movie = movies.find((item) => item.id === values.movie_id);
         const venue = venues.find((item) => item.id === values.venue_id);
-        if (movie?.status !== 'published' || !venue?.is_active) throw new Error('Publish the movie and activate the venue before opening sales.');
+        if (!venue?.is_active) throw new Error('Activate the venue before opening sales.');
         if (isNew || tiers.filter((item) => item.is_active).length === 0) throw new Error('Save a draft session and add an active General Admission capacity before opening sales.');
-        if (values.starts_at <= new Date().toISOString()) throw new Error('A public screening must start in the future.');
+        if (values.starts_at <= new Date().toISOString()) throw new Error('A public session must start in the future.');
       }
-      if (screening.status === 'cancelled' && !isNew && !window.confirm('Cancel this screening? Its issued tickets will be invalidated. Refunds must be handled separately.')) return;
+      if (screening.status === 'cancelled' && !isNew && !window.confirm('Cancel this session? Its issued tickets will be invalidated. Refunds must be handled separately.')) return;
       if (isNew) {
         const saved = assertResult(await supabase.from('screenings').insert(values).select('id').single());
         clearDraft(screeningDraftKey);
@@ -194,7 +224,7 @@ export function AdminScreeningForm() {
       } else {
         assertResult(await supabase.from('screenings').update(values).eq('id', id));
         clearDraft(screeningDraftKey);
-        setNotice('Screening saved.');
+        setNotice('Session saved.');
       }
     } catch (caught) { setError(caught.message); }
     finally { setBusy(false); }
@@ -226,14 +256,19 @@ export function AdminScreeningForm() {
 
   return <main className="admin-content"><div className="admin-page-header"><Link className="admin-back" to="/admin/screenings"><ArrowLeft size={16} /> Sessions</Link>
     <p className="admin-overline">Programme / {isNew ? 'New session' : 'Edit session'}</p><h1>{isNew ? 'Add a session' : 'Session setup'}</h1>
-    <p>All times are in Lagos time (WAT, UTC+1). Save a draft, set the general-admission capacity, then open sales.</p></div>
-    {loading ? <p>Loading screening…</p> : <div className="admin-two-column"><form className="admin-panel" onSubmit={saveScreening}><h2>Showing details</h2>
-      <div className="admin-fields"><label>Movie<select required value={screening.movie_id} onChange={(e) => update('movie_id', e.target.value)}><option value="">Choose movie</option>
-        {movies.map((movie) => <option key={movie.id} value={movie.id}>{movie.title} · {movie.status}</option>)}</select></label>
-        <label>Venue<select required value={screening.venue_id} onChange={(e) => update('venue_id', e.target.value)}><option value="">Choose venue</option>
+    <p>All times are in Lagos time (WAT, UTC+1). Every session lasts exactly 30 minutes.</p></div>
+    {loading ? <p>Loading session…</p> : <div className="admin-two-column"><form className="admin-panel" onSubmit={saveScreening}><h2>Session details</h2>
+      <div className="admin-fields"><label>Venue<select required value={screening.venue_id} onChange={(e) => updateVenue(e.target.value)}><option value="">Choose venue</option>
           {venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}{venue.is_active ? '' : ' · inactive'}</option>)}</select></label>
-        <label>Starts at<input required type="datetime-local" value={screening.starts_at} onChange={(e) => update('starts_at', e.target.value)} /></label>
-        <label>Ends at<input required type="datetime-local" value={screening.ends_at} onChange={(e) => update('ends_at', e.target.value)} /></label>
+        <label className="admin-field-wide">Pricing rule<select value={screening.pricing_rule_id || ''} onChange={(e) => update('pricing_rule_id', e.target.value)}>
+          <option value="">Automatic rule for the venue and date</option>
+          {pricingRules.filter((rule) => (rule.is_active || rule.id === screening.pricing_rule_id)
+            && (!rule.venue_id || !screening.venue_id || rule.venue_id === screening.venue_id)).map((rule) => <option key={rule.id} value={rule.id}>
+              {rule.name} · {formatKobo(rule.weekday_price_kobo)} Mon–Thu / {formatKobo(rule.weekend_price_kobo)} Fri–Sun{rule.is_active ? '' : ' · inactive'}
+            </option>)}
+        </select></label>
+        <label>Starts at<input required type="datetime-local" value={screening.starts_at} onChange={(e) => updateStart(e.target.value)} /></label>
+        <label>Ends at (automatic)<input required readOnly type="datetime-local" value={screening.ends_at} /></label>
         <label>Sales start<input required type="datetime-local" value={screening.sales_start} onChange={(e) => update('sales_start', e.target.value)} /></label>
         <label>Sales end<input required type="datetime-local" value={screening.sales_end} onChange={(e) => update('sales_end', e.target.value)} /></label>
         <label>Admission opens (minutes before)<input required type="number" min="0" max="180" value={screening.admission_opens_minutes} onChange={(e) => update('admission_opens_minutes', e.target.value)} /></label>
@@ -242,7 +277,7 @@ export function AdminScreeningForm() {
           {['draft', 'on_sale', 'sold_out', 'in_progress', 'cancelled', 'completed'].map((status) => <option key={status} value={status} disabled={['sold_out', 'in_progress', 'completed'].includes(status)}>{screeningStatusLabels[status]}{['sold_out', 'in_progress', 'completed'].includes(status) ? ' (automatic)' : ''}</option>)}</select></label>
       </div><p className="admin-help">Full, in progress and completed states are automatic. Cancelling invalidates tickets but does not issue a Paystack refund automatically.</p>
       {error && <p className="admin-error" role="alert">{error}</p>}{notice && <p className="admin-success" role="status">{notice}</p>}
-      <button className="admin-button admin-button--primary" disabled={busy}>{busy ? 'Saving…' : 'Save screening'}</button></form>
+      <button className="admin-button admin-button--primary" disabled={busy}>{busy ? 'Saving…' : 'Save session'}</button></form>
       <div className="admin-form-side"><section className="admin-panel"><h2>General admission</h2>
         {isNew ? <p>Save the draft session first, then set its seating capacity.</p> : <>
           <div className="admin-tier-list">{tiers.length === 0 ? <p>No admission capacity yet. Add it before opening sales.</p> : tiers.map((item) => <button type="button" className="admin-tier-item" key={item.id}
@@ -256,7 +291,7 @@ export function AdminScreeningForm() {
             <div className="admin-inline-actions"><button className="admin-button" disabled={busy || (!tier.id && tiers.length > 0)}><Ticket size={16} /> {tier.id ? 'Update admission' : 'Add admission'}</button>
               {tier.id && <button type="button" className="admin-link-button" onClick={() => { setTier(emptyTier); clearDraft(tierDraftKey); }}>Cancel edit</button>}</div>
           </form></>}
-      </section><div className="admin-note"><strong>Automatic pricing</strong><p>The price is selected from Pricing using the session's Lagos date: weekday Monday–Friday, weekend Saturday–Sunday. Capacity is the number of people who can book this session.</p></div>
+      </section><div className="admin-note"><strong>Session pricing</strong><p>Choose a specific pricing rule for a promotion, or leave it automatic. Automatic pricing uses the session's Lagos date: weekday Monday–Thursday, weekend Friday–Sunday. Capacity is the number of people who can book this session.</p></div>
         {!isNew && profile?.role === 'admin' && <section className="admin-panel admin-danger-zone"><h2>Delete session</h2>
           <p>Use this only for an unused session created by mistake. Sessions with checkout, payment or admission history must be cancelled and retained.</p>
           <button className="admin-button admin-button--danger" type="button" disabled={busy} onClick={deleteScreening}><Trash2 size={16} /> {busy ? 'Checking…' : 'Delete unused session'}</button>

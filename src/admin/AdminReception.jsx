@@ -66,7 +66,7 @@ export default function AdminReception() {
       const zone = booking.venue_timezone || 'Africa/Lagos';
       const fullyArrived = Number(booking.arrived_count) >= Number(booking.quantity);
       return <article className="admin-panel admin-booking-card" key={booking.id}>
-        <div className="admin-booking-card__head"><div><p className="admin-overline">{booking.reference}</p><h2>{booking.movie}</h2></div>
+        <div className="admin-booking-card__head"><div><p className="admin-overline">{booking.reference}</p><h2>{booking.session || booking.movie || 'HyperView session'}</h2></div>
           <span className={`admin-status admin-status--${booking.status}`}>{booking.status}</span></div>
         <p className="admin-booking-card__customer"><strong>{booking.customer_name}</strong><span>{booking.customer_email}</span><span>{booking.customer_phone}</span></p>
         <div className="admin-order-facts"><span><small>Session</small><strong>{formatShowing(booking.starts_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</strong></span>

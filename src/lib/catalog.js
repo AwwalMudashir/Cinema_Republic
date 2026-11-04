@@ -39,6 +39,51 @@ export function posterUrl(path) {
   return supabase.storage.from('movie-posters').getPublicUrl(path).data.publicUrl;
 }
 
+export async function loadSessionProgramme() {
+  if (!supabase) throw new Error('Session booking is not configured yet. Add the Supabase site variables.');
+
+  const { data, error } = await runCatalogueQuery(supabase
+    .from('screenings')
+    .select(`
+      id, session_name, status, starts_at, ends_at, sales_start, sales_end,
+      admission_opens_minutes, admission_grace_minutes,
+      venue:venues!inner(id, name, address, city, country, timezone, is_active),
+      ticket_types(id, name, description, price_kobo, capacity, is_active)
+    `)
+    .is('movie_id', null)
+    .in('status', ['on_sale', 'sold_out'])
+    .eq('venue.is_active', true)
+    .gt('sales_end', new Date().toISOString())
+    .gt('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: true }), 'The HyperView session schedule');
+  if (error) throw new Error(`Could not load sessions: ${error.message}`);
+
+  const { data: availability } = await runCatalogueQuery(
+    supabase.rpc('public_ticket_availability'), 'Session availability',
+  ).catch(() => ({ data: null }));
+  const remainingByType = new Map((availability ?? []).map((item) =>
+    [item.ticket_type_id, Number(item.remaining)]));
+  const now = Date.now();
+
+  return (data ?? []).filter((row) => row.venue).map((row) => {
+    const ticketTypes = (row.ticket_types ?? []).filter((type) => type.is_active)
+      .map((type) => ({ ...type, remaining: remainingByType.get(type.id) ?? null }));
+    const salesOpen = row.status === 'on_sale'
+      && new Date(row.sales_start).getTime() <= now
+      && ticketTypes.some((type) => type.remaining === null || type.remaining > 0);
+    const comingSoon = row.status === 'on_sale' && new Date(row.sales_start).getTime() > now;
+    return {
+      ...row,
+      title: row.session_name || 'HyperView 9D Flying Cinema Session',
+      venue: row.venue,
+      ticketTypes,
+      isBookable: salesOpen,
+      isComingSoon: comingSoon,
+      isSoldOut: row.status === 'sold_out' || (!salesOpen && !comingSoon),
+    };
+  });
+}
+
 export async function loadMovieProgramme() {
   if (!supabase) throw new Error('Movie booking is not configured yet. Add the Supabase site variables.');
 
@@ -49,7 +94,7 @@ export async function loadMovieProgramme() {
       admission_opens_minutes, admission_grace_minutes,
       movie:movies!inner(id, slug, title, tagline, synopsis, poster_path,
         backdrop_path, genre, rating, language, runtime_minutes, featured),
-      venue:venues!inner(name, address, city, country, timezone),
+      venue:venues!inner(id, name, address, city, country, timezone),
       ticket_types(id, name, description, price_kobo, capacity, is_active)
     `)
     .in('status', ['on_sale', 'sold_out'])
@@ -62,12 +107,16 @@ export async function loadMovieProgramme() {
 
   // Inventory is a safe aggregate RPC; the underlying orders stay private.
   // If it is briefly unavailable, checkout still enforces the true capacity.
-  const { data: availability } = await runCatalogueQuery(
-    supabase.rpc('public_ticket_availability'),
-    'Session availability',
-  ).catch(() => ({ data: null }));
+  const [{ data: availability }, { data: groupPrices }] = await Promise.all([
+    runCatalogueQuery(supabase.rpc('public_ticket_availability'), 'Session availability')
+      .catch(() => ({ data: null })),
+    runCatalogueQuery(supabase.rpc('public_group_package_prices'), 'Group package pricing')
+      .catch(() => ({ data: null })),
+  ]);
   const remainingByType = new Map((availability ?? []).map((item) =>
     [item.ticket_type_id, Number(item.remaining)]));
+  const groupPriceByScreening = new Map((groupPrices ?? []).map((item) =>
+    [item.screening_id, Number(item.group_price_kobo)]));
 
   const byMovie = new Map();
   for (const row of data ?? []) {
@@ -82,6 +131,7 @@ export async function loadMovieProgramme() {
       sales_end: row.sales_end,
       admission_opens_minutes: row.admission_opens_minutes,
       admission_grace_minutes: row.admission_grace_minutes,
+      group_price_kobo: groupPriceByScreening.get(row.id) ?? null,
       venue: row.venue,
       ticketTypes: (row.ticket_types ?? [])
         .filter((type) => type.is_active)

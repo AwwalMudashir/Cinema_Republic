@@ -21,6 +21,7 @@ export default function BookingPage() {
   const status = data?.status === 'paid' && new Date(data.valid_until).getTime() <= Date.now()
     ? 'expired' : data?.status;
   const presentable = status === 'paid';
+  const sessionTitle = data?.session?.title || data?.movie?.title || 'HyperView 9D Flying Cinema Session';
 
   return <main className="flow-page booking-confirmation-page">
     <section className="flow-hero ticket-shell"><p className="ticket-kicker"><Ticket size={16} /> HyperView 9D Flying Cinema</p>
@@ -28,10 +29,10 @@ export default function BookingPage() {
       <p>Present this confirmation at reception and arrive at least 15 minutes before your selected session.</p></section>
     <div className="ticket-shell flow-content">
       {state.loading && <article className="flow-card" role="status">Loading your booking…</article>}
-      {state.error && <article className="flow-card"><TriangleAlert size={32} /><h2>Booking unavailable</h2><p role="alert">{state.error}</p><Link to="/movies" className="ticket-button ticket-button--primary">Browse sessions</Link></article>}
+      {state.error && <article className="flow-card"><TriangleAlert size={32} /><h2>Booking unavailable</h2><p role="alert">{state.error}</p><Link to="/sessions" className="ticket-button ticket-button--primary">Browse sessions</Link></article>}
       {data && <article className="booking-confirmation">
-        <div className="booking-confirmation__art">{data.movie.poster_url && <img src={data.movie.poster_url} alt={`${data.movie.title} poster`} />}
-          <div><p className="ticket-kicker">Paid session</p><h2>{data.movie.title}</h2><p>{data.screening.venue}, {data.screening.venue_city}</p></div></div>
+        <div className="booking-confirmation__art booking-confirmation__art--session"><Ticket size={58} aria-hidden="true" />
+          <div><p className="ticket-kicker">Paid session</p><h2>{sessionTitle}</h2><p>30 minutes · two staff-selected 15-minute films<br />{data.screening.venue}, {data.screening.venue_city}</p></div></div>
         <div className="booking-confirmation__body"><div className="booking-confirmation__heading"><div><small>Booking reference</small><strong>{data.reference}</strong></div>
           <span className={`ticket-state ticket-state--${status}`}>{status === 'paid' ? 'Confirmed' : String(status).replaceAll('_', ' ')}</span></div>
           <div className="booking-confirmation__facts">
@@ -45,7 +46,7 @@ export default function BookingPage() {
             <div><h3>Present at reception</h3><p>Staff will confirm payment, register your party and issue physical identification tags.</p></div></div>}
           <div className="booking-policy-card"><ShieldCheck size={21} /><div><strong>Arrival and validity</strong>
             <p>Arrive at least 15 minutes early. Admission opens {formatShowing(data.valid_from, zone, { dateStyle: 'medium', timeStyle: 'short' })} and this booking expires {formatShowing(data.valid_until, zone, { dateStyle: 'medium', timeStyle: 'short' })}.</p>
-            <p>The booking is valid only for this session. It is non-refundable and cannot be rescheduled.</p></div></div>
+            <p>The booking is valid only for this selected session. It is non-refundable and cannot be rescheduled.</p></div></div>
           {!presentable && <p className="flow-warning">This booking cannot be used for admission. Contact the cinema if you need assistance.</p>}
         </div>
       </article>}

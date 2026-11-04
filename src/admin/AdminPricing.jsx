@@ -71,13 +71,14 @@ export default function AdminPricing() {
   }
 
   return <main className="admin-content"><div className="admin-page-header"><p className="admin-overline">Commerce / Pricing</p>
-    <h1>Session pricing</h1><p>Weekday and weekend prices are selected automatically from the session date in Lagos time.</p></div>
+    <h1>Session pricing</h1><p>Set the per-person price for Monday–Thursday and Friday–Sunday. A session can also use a specific promotional rule.</p></div>
     <div className="admin-two-column"><section className="admin-panel"><h2>Effective rules <span className="admin-count">{rules.length}</span></h2>
       <div className="admin-list">{rules.map((item) => <button type="button" className="admin-list-item" key={item.id} onClick={() => edit(item)}>
         <span className="admin-list-icon"><CalendarRange size={19} /></span><span><strong>{item.name}</strong>
-          <small>{venues.find((venue) => venue.id === item.venue_id)?.name || 'All venues'} · from {item.effective_from}{item.effective_until ? ` to ${item.effective_until}` : ''}</small></span>
-        <span><strong>{formatKobo(item.weekday_price_kobo)}</strong><small>weekday</small></span>
-        <span><strong>{formatKobo(item.weekend_price_kobo)}</strong><small>weekend</small></span>
+          <small>{venues.find((venue) => venue.id === item.venue_id)?.name || 'All venues'} · from {item.effective_from}{item.effective_until ? ` to ${item.effective_until}` : ''}</small>
+          </span>
+        <span><strong>{formatKobo(item.weekday_price_kobo)}</strong><small>individual · Mon–Thu</small></span>
+        <span><strong>{formatKobo(item.weekend_price_kobo)}</strong><small>individual · Fri–Sun</small></span>
         <span className={`admin-status ${item.is_active ? 'admin-status--published' : 'admin-status--archived'}`}>{item.is_active ? 'Active' : 'Inactive'}</span><Pencil size={15} />
       </button>)}</div>
     </section>
@@ -85,12 +86,12 @@ export default function AdminPricing() {
       {rule.id && <button type="button" className="admin-link-button" onClick={() => setRule(emptyRule)}><Plus size={15} /> New rule</button>}</div>
       <div className="admin-fields admin-fields--single"><label>Name<input required value={rule.name} onChange={(e) => update('name', e.target.value)} /></label>
         <label>Venue<select value={rule.venue_id} onChange={(e) => update('venue_id', e.target.value)}><option value="">All venues</option>{venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}</select></label>
-        <label>Weekday price (₦)<input required inputMode="decimal" value={rule.weekday_naira} onChange={(e) => update('weekday_naira', e.target.value)} /></label>
-        <label>Weekend price (₦)<input required inputMode="decimal" value={rule.weekend_naira} onChange={(e) => update('weekend_naira', e.target.value)} /></label>
+        <label>Individual price, Monday–Thursday (₦)<input required inputMode="decimal" value={rule.weekday_naira} onChange={(e) => update('weekday_naira', e.target.value)} /></label>
+        <label>Individual price, Friday–Sunday (₦)<input required inputMode="decimal" value={rule.weekend_naira} onChange={(e) => update('weekend_naira', e.target.value)} /></label>
         <label>Effective from<input required type="date" value={rule.effective_from} onChange={(e) => update('effective_from', e.target.value)} /></label>
         <label>Effective until (optional)<input type="date" value={rule.effective_until} onChange={(e) => update('effective_until', e.target.value)} /></label>
         <label className="admin-checkbox"><input type="checkbox" checked={rule.is_active} onChange={(e) => update('is_active', e.target.checked)} /> Rule is active</label></div>
-      <p className="admin-help">A venue-specific rule takes priority over the all-venues rule. For overlapping rules, the latest effective start date wins.</p>
+      <p className="admin-help">A rule selected directly on a session overrides the automatic date rule. Prices are always confirmed by the server before Paystack opens.</p>
       {error && <p className="admin-error" role="alert">{error}</p>}{notice && <p className="admin-success" role="status">{notice}</p>}
       <button className="admin-button admin-button--primary" disabled={busy}><BadgeDollarSign size={17} /> {busy ? 'Saving…' : 'Save pricing rule'}</button>
     </form></div>

@@ -9,7 +9,6 @@ import './admin.css';
 
 const paths = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, roles: ['admin', 'content_manager', 'cashier', 'supervisor', 'check_in_staff'], end: true },
-  { to: '/admin/movies', label: 'Movies', icon: Clapperboard, roles: ['admin', 'content_manager'] },
   { to: '/admin/venues', label: 'Venues', icon: MapPin, roles: ['admin', 'content_manager'] },
   { to: '/admin/screenings', label: 'Sessions', icon: Tickets, roles: ['admin', 'content_manager'] },
   { to: '/admin/pricing', label: 'Pricing', icon: BadgeDollarSign, roles: ['admin', 'content_manager'] },
@@ -55,7 +54,7 @@ export default function AdminFrame() {
     {menuOpen && <button type="button" className="admin-scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}
     <div className="admin-main">
       <header className="admin-topbar"><button type="button" className="admin-menu-button" aria-label="Toggle menu" onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X /> : <Menu />}</button>
-        <span><ShieldCheck size={17} /> Secure operations</span><div className="admin-topbar-actions"><Link to="/movies">View public site ↗</Link>
+        <span><ShieldCheck size={17} /> Secure operations</span><div className="admin-topbar-actions"><Link to="/sessions">View public site ↗</Link>
           <button type="button" className="admin-topbar-signout" onClick={signOut}><LogOut size={15} /> Sign out</button></div></header>
       <Outlet />
     </div>

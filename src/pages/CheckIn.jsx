@@ -30,10 +30,10 @@ async function gateCall(name, ticketId) {
 
 const reasonLabel = {
   not_found: 'No ticket matches that ID.',
-  not_yet_valid: 'Admission has not opened for this screening.',
+  not_yet_valid: 'Admission has not opened for this session.',
   expired: 'This ticket has expired.',
   already_used: 'This ticket was already checked in.',
-  cancelled: 'This ticket or screening was cancelled.',
+  cancelled: 'This ticket or session was cancelled.',
   refunded: 'This ticket was refunded.',
   order_not_paid: 'The order was not paid.',
   inactive: 'This ticket is not active.',
@@ -148,7 +148,7 @@ export default function CheckIn() {
   };
 
   const ticket = result?.ticket;
-  const movie = result?.movie;
+  const sessionDetails = result?.session || result?.movie;
   const screening = result?.screening;
   const zone = screening?.venue_timezone || 'Africa/Lagos';
   return (
@@ -182,7 +182,7 @@ export default function CheckIn() {
             </form>
           </section>
           <section className="flow-card gate-result" aria-live="polite">
-            {!result && <div className="gate-empty"><TicketCheck size={40} /><h2>Ready for the next guest</h2><p>A verified admission will appear here with its film, venue and status.</p></div>}
+            {!result && <div className="gate-empty"><TicketCheck size={40} /><h2>Ready for the next guest</h2><p>A verified admission will appear here with its session, venue and status.</p></div>}
             {result && <>
               <span className={`flow-icon ${result.valid ? 'flow-icon--success' : ''}`}>
                 {result.valid ? <CheckCircle2 size={31} /> : <TriangleAlert size={31} />}
@@ -193,14 +193,14 @@ export default function CheckIn() {
                   : result.valid ? 'Reception is complete. Admit only after tapping Redeem.'
                   : result.message || reasonLabel[result.reason] || 'This ticket is not valid.'}
               </p>
-              {movie && <div className="gate-ticket-details">
-                {movie.poster_url && <img src={movie.poster_url} alt="" />}
-                <div><h3>{movie.title}</h3><p>{ticket?.type} · {movie.rating}</p></div>
+              {sessionDetails && <div className="gate-ticket-details">
+                <TicketCheck size={38} aria-hidden="true" />
+                <div><h3>{sessionDetails.title}</h3><p>{ticket?.type} · 30 minutes · two films</p></div>
               </div>}
               {ticket && <p className="gate-detail"><strong>Holder</strong><span>{ticket.holder_name}</span></p>}
               {ticket?.arrived_at && <p className="gate-detail"><strong>Registered at reception</strong><span>{formatShowing(ticket.arrived_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>}
               {screening && <>
-                <p className="gate-detail"><strong>Showing</strong><span>{formatShowing(screening.starts_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>
+                <p className="gate-detail"><strong>Session</strong><span>{formatShowing(screening.starts_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>
                 <p className="gate-detail"><strong>Venue</strong><span>{screening.venue}, {screening.venue_city}</span></p>
               </>}
               {ticket?.checked_in_at && <p className="gate-detail"><strong>Checked in</strong><span>{formatShowing(ticket.checked_in_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>}

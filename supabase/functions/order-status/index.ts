@@ -34,7 +34,7 @@ type OrderStatusResult = {
   paid_at: string | null;
   customer_name: string;
   quantity: number | string;
-  movie_title: string;
+  session_title: string;
   starts_at: string;
   ends_at: string;
   venue_name: string;
@@ -129,7 +129,7 @@ export default {
         paid_at: result.paid_at,
         customer_name: result.customer_name,
         quantity: Number(result.quantity),
-        movie_title: result.movie_title,
+        session_title: result.session_title,
         starts_at: result.starts_at,
         ends_at: result.ends_at,
         venue_name: result.venue_name,

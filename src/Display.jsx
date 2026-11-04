@@ -5,8 +5,8 @@ import About from './pages/About'
 import Contact from './pages/Contact'
 import Events from './pages/Events'
 import Partnership from './pages/Partnership'
-import Movies from './pages/Movies'
-import MovieBooking from './pages/MovieBooking'
+import Sessions from './pages/Sessions'
+import SessionBooking from './pages/SessionBooking'
 import PaymentCallback from './pages/PaymentCallback'
 import TicketPage from './pages/TicketPage'
 import BookingPage from './pages/BookingPage'
@@ -18,8 +18,6 @@ const AdminFrame = lazy(() => import('./admin/AdminFrame'));
 const RequireRole = lazy(() => import('./admin/AdminFrame').then((module) => ({ default: module.RequireRole })));
 const AdminHome = lazy(() => import('./admin/AdminHome'));
 const AdminLogin = lazy(() => import('./admin/AdminLogin'));
-const AdminMovies = lazy(() => import('./admin/AdminMovies').then((module) => ({ default: module.AdminMovies })));
-const AdminMovieForm = lazy(() => import('./admin/AdminMovies').then((module) => ({ default: module.AdminMovieForm })));
 const AdminVenues = lazy(() => import('./admin/AdminVenues'));
 const AdminScreenings = lazy(() => import('./admin/AdminScreenings').then((module) => ({ default: module.AdminScreenings })));
 const AdminScreeningForm = lazy(() => import('./admin/AdminScreenings').then((module) => ({ default: module.AdminScreeningForm })));
@@ -38,12 +36,14 @@ const Display = () => {
         <Route path='/contact' element={<Contact />} />
         <Route path='/events' element={<Events />} />
         {PUBLIC_TICKETING_ENABLED ? <>
-          <Route path='/movies' element={<Movies />} />
-          <Route path='/movies/:slug' element={<MovieBooking />} />
+          <Route path='/sessions' element={<Sessions />} />
+          <Route path='/sessions/:sessionId' element={<SessionBooking />} />
+          <Route path='/movies/*' element={<Navigate to='/sessions' replace />} />
           <Route path='/payment/callback' element={<PaymentCallback />} />
           <Route path='/ticket/:publicId' element={<TicketPage />} />
           <Route path='/booking/:publicId' element={<BookingPage />} />
         </> : <>
+          <Route path='/sessions/*' element={<Navigate to='/' replace />} />
           <Route path='/movies/*' element={<Navigate to='/' replace />} />
           <Route path='/payment/callback' element={<Navigate to='/' replace />} />
           <Route path='/ticket/*' element={<Navigate to='/' replace />} />
@@ -52,8 +52,6 @@ const Display = () => {
         {TICKETING_ADMIN_ENABLED ? <>
           <Route path='/admin' element={<AdminAuthProvider><AdminFrame /></AdminAuthProvider>}>
             <Route index element={<AdminHome />} />
-            <Route path='movies' element={<RequireRole roles={['admin', 'content_manager']}><AdminMovies /></RequireRole>} />
-            <Route path='movies/:id' element={<RequireRole roles={['admin', 'content_manager']}><AdminMovieForm /></RequireRole>} />
             <Route path='venues' element={<RequireRole roles={['admin', 'content_manager']}><AdminVenues /></RequireRole>} />
             <Route path='screenings' element={<RequireRole roles={['admin', 'content_manager']}><AdminScreenings /></RequireRole>} />
             <Route path='screenings/:id' element={<RequireRole roles={['admin', 'content_manager']}><AdminScreeningForm /></RequireRole>} />

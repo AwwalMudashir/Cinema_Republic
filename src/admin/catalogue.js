@@ -3,10 +3,11 @@ import { supabase } from '../lib/supabase';
 export function assertResult({ data, error }) {
   if (error) {
     const messages = {
-      SOLD_SCREENING_DETAILS_IMMUTABLE: 'This screening has paid orders, so its movie, venue and times cannot be changed. Cancel it and create a new screening if the event must move.',
-      CANCELLED_SCREENING_CANNOT_REOPEN: 'A cancelled screening cannot be reopened. Create a new screening instead.',
+      SOLD_SCREENING_DETAILS_IMMUTABLE: 'This session has paid orders, so its venue and times cannot be changed. Cancel it and create a new session if it must move.',
+      CANCELLED_SCREENING_CANNOT_REOPEN: 'A cancelled session cannot be reopened. Create a new session instead.',
       CAPACITY_BELOW_RESERVED: 'Capacity cannot be lower than the number of paid or currently reserved tickets.',
-      TICKET_TYPE_SCREENING_IMMUTABLE: 'A ticket tier cannot be moved to another screening.',
+      TICKET_TYPE_SCREENING_IMMUTABLE: 'Admission capacity cannot be moved to another session.',
+      SESSION_TIME_OVERLAP: 'This time overlaps another active session at the venue. Choose a start time after the existing session ends.',
     };
     const code = Object.keys(messages).find((key) => error.message.includes(key));
     throw new Error(code ? messages[code] : error.message);

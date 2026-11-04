@@ -12,7 +12,7 @@ import {
   readJson,
 } from "../_shared/http.ts";
 import { getAdminClient } from "../_shared/supabase.ts";
-import { posterUrl, UUID_PATTERN } from "../_shared/ticket-gate.ts";
+import { UUID_PATTERN } from "../_shared/ticket-gate.ts";
 
 export default {
   async fetch(request: Request): Promise<Response> {
@@ -50,7 +50,6 @@ export default {
       if (!data) throw new HttpError(404, "booking_not_found", "Booking not found");
 
       const result = data as Record<string, unknown>;
-      const movie = result.movie as Record<string, unknown>;
       const bookingUrl = `${getSiteUrl()}/booking/${id}`;
       const qrDataUrl = await QRCode.toDataURL(bookingUrl, {
         errorCorrectionLevel: "M",
@@ -60,7 +59,6 @@ export default {
       });
       return jsonResponse(request, {
         ...result,
-        movie: { ...movie, poster_url: posterUrl(movie.poster_path), poster_path: undefined },
         qr_data_url: qrDataUrl,
       });
     } catch (error) {

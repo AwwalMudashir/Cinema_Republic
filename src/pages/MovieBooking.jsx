@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft, CalendarDays, Check, Clock3, Info, LockKeyhole,
-  MapPin, Minus, Plus, ShieldCheck, Ticket,
+  MapPin, Minus, Plus, ShieldCheck, Ticket, UsersRound,
 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import useMovieProgramme from '../hooks/useMovieProgramme';
@@ -26,6 +26,8 @@ export default function MovieBooking() {
   const { movies, loading, error } = useMovieProgramme();
   const movie = movies.find((item) => item.slug === slug);
   const [screeningId, setScreeningId] = useState('');
+  const [bookingType, setBookingType] = useState('individual');
+  const [groupScreeningIds, setGroupScreeningIds] = useState([]);
   const [quantities, setQuantities] = useState({});
   const [customer, setCustomer] = useState({ name: '', email: '', phone: '' });
   const [policyAccepted, setPolicyAccepted] = useState(false);
@@ -41,6 +43,29 @@ export default function MovieBooking() {
   const screening = movie?.openScreenings.find((item) => item.id === screeningId)
     || movie?.openScreenings[0];
   const ticketTypes = (screening?.ticketTypes ?? []).slice(0, 1);
+  const groupCandidates = useMemo(() => {
+    if (!movie || !screening) return [];
+    const primaryDay = formatShowing(screening.starts_at, screening.venue.timezone, {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+    });
+    return movies.flatMap((programmeMovie) => programmeMovie.openScreenings.map((item) => ({
+      ...item, movie: programmeMovie,
+    }))).filter((item) => item.movie.id !== movie.id
+      && item.venue.id === screening.venue.id
+      && formatShowing(item.starts_at, item.venue.timezone, {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+      }) === primaryDay
+      && new Date(item.starts_at).getTime() >= new Date(screening.ends_at).getTime()
+      && item.ticketTypes[0]
+      && (item.ticketTypes[0].remaining === null || item.ticketTypes[0].remaining >= 15))
+      .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  }, [movie, movies, screening]);
+  const groupSelections = groupScreeningIds.map((id) =>
+    groupCandidates.find((item) => item.id === id)).filter(Boolean)
+    .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  const canBuildGroupPackage = groupCandidates.some((second, index) =>
+    groupCandidates.slice(index + 1).some((third) => third.movie.id !== second.movie.id
+      && new Date(third.starts_at).getTime() >= new Date(second.ends_at).getTime()));
   const dates = useMemo(() => {
     const seen = new Set();
     return (movie?.openScreenings ?? []).filter((item) => {
@@ -59,18 +84,57 @@ export default function MovieBooking() {
     formatShowing(item.starts_at, item.venue.timezone, {
       year: 'numeric', month: '2-digit', day: '2-digit',
     }) === selectedDay);
-  const selectedItems = ticketTypes
+  const individualItems = ticketTypes
     .map((type) => ({ ticket_type_id: type.id, quantity: quantities[type.id] || 0 }))
     .filter((item) => item.quantity > 0);
-  const ticketCount = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalKobo = ticketTypes.reduce((sum, type) =>
-    sum + Number(type.price_kobo) * (quantities[type.id] || 0), 0);
+  const selectedItems = bookingType === 'group' && screening && groupSelections.length === 2
+    ? [screening, ...groupSelections].map((item) => ({
+      ticket_type_id: item.ticketTypes[0].id, quantity: 15,
+    }))
+    : individualItems;
+  const ticketCount = bookingType === 'group' ? 15
+    : individualItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalKobo = bookingType === 'group' ? Number(screening?.group_price_kobo || 0)
+    : ticketTypes.reduce((sum, type) => sum + Number(type.price_kobo) * (quantities[type.id] || 0), 0);
 
   const chooseScreening = (id) => {
     setScreeningId(id);
+    setBookingType('individual');
     setQuantities({});
+    setGroupScreeningIds([]);
     setPolicyAccepted(false);
     setMessage('');
+  };
+
+  const chooseBookingType = (type) => {
+    setBookingType(type);
+    setQuantities({});
+    setGroupScreeningIds([]);
+    setPolicyAccepted(false);
+    setMessage('');
+  };
+
+  const toggleGroupScreening = (candidate) => {
+    setMessage('');
+    setGroupScreeningIds((current) => {
+      if (current.includes(candidate.id)) return current.filter((id) => id !== candidate.id);
+      if (current.length >= 2) return current;
+      const chosen = [...current.map((id) => groupCandidates.find((item) => item.id === id)).filter(Boolean), candidate]
+        .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+      if (new Set(chosen.map((item) => item.movie.id)).size !== chosen.length) {
+        setMessage('Choose a different movie for each group experience.');
+        return current;
+      }
+      let previousEnd = new Date(screening.ends_at).getTime();
+      for (const item of chosen) {
+        if (new Date(item.starts_at).getTime() < previousEnd) {
+          setMessage('That experience overlaps another selection. Choose a later time.');
+          return current;
+        }
+        previousEnd = new Date(item.ends_at).getTime();
+      }
+      return [...current, candidate.id];
+    });
   };
 
   const changeQuantity = (id, change) => {
@@ -85,7 +149,17 @@ export default function MovieBooking() {
     event.preventDefault();
     if (!movie?.isBookable || !screening || !ticketTypes.length
       || new Date(screening.sales_start).getTime() > Date.now()) return;
-    if (ticketTypes.some((type) => type.remaining !== null
+    if (bookingType === 'group' && (!screening.group_price_kobo || groupSelections.length !== 2)) {
+      setMessage('Choose two follow-on experiences to complete the three-experience group package.');
+      return;
+    }
+    const selectedScreenings = bookingType === 'group' ? [screening, ...groupSelections] : [screening];
+    if (bookingType === 'group' && selectedScreenings.some((item) =>
+      item.ticketTypes[0]?.remaining !== null && item.ticketTypes[0]?.remaining < 15)) {
+      setMessage('One of the selected experiences no longer has 15 places available. Choose another time.');
+      return;
+    }
+    if (bookingType === 'individual' && ticketTypes.some((type) => type.remaining !== null
       && (quantities[type.id] || 0) > type.remaining)) {
       setMessage('Availability has changed. Please adjust your ticket quantities.');
       return;
@@ -106,10 +180,11 @@ export default function MovieBooking() {
     setMessage('');
     try {
       const result = await invokeFunction('initialize-payment', {
+        booking_type: bookingType,
         screening_id: screening.id,
         items: selectedItems,
         customer,
-        policy: { version: 'hyperview-booking-v1', accepted: true },
+        policy: { version: 'hyperview-booking-v2', accepted: true },
       });
       const url = new URL(result.authorization_url);
       if (url.protocol !== 'https:' || url.hostname !== 'checkout.paystack.com'
@@ -233,14 +308,23 @@ export default function MovieBooking() {
                   ))}
                 </div>
                 {screening && <><p className="showtime-venue"><MapPin size={16} /> {screening.venue.name}, {screening.venue.city}</p>
-                  <p className="session-price-note"><Info size={15} /> {['Sat', 'Sun'].includes(formatShowing(screening.starts_at, screening.venue.timezone, { weekday: 'short' })) ? 'Weekend' : 'Weekday'} price selected automatically from this date.</p></>}
+                  <p className="session-price-note"><Info size={15} /> {['Fri', 'Sat', 'Sun'].includes(formatShowing(screening.starts_at, screening.venue.timezone, { weekday: 'short' })) ? 'Weekend (Friday–Sunday)' : 'Weekday (Monday–Thursday)'} price selected from this session’s pricing rule.</p></>}
               </section>
 
               <section className="booking-panel" aria-labelledby="tickets-title">
                 <div className="booking-panel__heading">
-                  <span>02</span><div><h2 id="tickets-title">How many guests?</h2><p>One General Admission place per person, up to eight.</p></div>
+                  <span>02</span><div><h2 id="tickets-title">Choose individual or group booking</h2><p>Book up to eight individual places, or one fixed package for 15 people and three experiences.</p></div>
                 </div>
-                <div className="ticket-options">
+                <div className="booking-type-options" role="group" aria-label="Booking type">
+                  <button type="button" className={bookingType === 'individual' ? 'active' : ''} onClick={() => chooseBookingType('individual')}>
+                    <Ticket size={20} /><span><strong>Individual tickets</strong><small>Choose 1–8 guests for this experience</small></span>
+                  </button>
+                  <button type="button" className={bookingType === 'group' ? 'active' : ''} onClick={() => chooseBookingType('group')}
+                    disabled={!screening?.group_price_kobo || !canBuildGroupPackage || (ticketTypes[0]?.remaining !== null && ticketTypes[0]?.remaining < 15)}>
+                    <UsersRound size={20} /><span><strong>15-person group package</strong><small>{!screening?.group_price_kobo ? 'Not offered for this session' : !canBuildGroupPackage ? 'No complete three-experience itinerary is available' : `${formatKobo(screening.group_price_kobo)} total · three experiences`}</small></span>
+                  </button>
+                </div>
+                {bookingType === 'individual' && <div className="ticket-options">
                   {ticketTypes.map((type) => (
                     <div className="ticket-option" key={type.id}>
                       <div><h3>{type.name}</h3><p>{type.remaining === 0 ? 'Sold out' : type.remaining !== null && type.remaining <= 5 ? `Only ${type.remaining} places left` : type.description || 'HyperView admission for this session'}</p></div>
@@ -256,7 +340,25 @@ export default function MovieBooking() {
                     </div>
                   ))}
                   {!ticketTypes.length && <p>No admissions are on sale for this session.</p>}
-                </div>
+                </div>}
+                {bookingType === 'group' && <div className="group-package-picker">
+                  <div className="group-package-picker__intro"><UsersRound size={22} /><div><strong>15 guests · three different movies</strong>
+                    <p>Your first experience is {movie.title}. Choose two later experiences at the same venue today. All three sessions are reserved together for the same 15-person party.</p></div></div>
+                  <div className="group-package-picker__selected"><span className="active"><Check size={15} /> 1. {movie.title}</span>
+                    {groupSelections.map((item, index) => <span className="active" key={item.id}><Check size={15} /> {index + 2}. {item.movie.title}</span>)}
+                    {Array.from({ length: 2 - groupSelections.length }, (_, index) => <span key={`empty-${index}`}>{groupSelections.length + index + 2}. Choose an experience</span>)}</div>
+                  <div className="group-experience-options">
+                    {groupCandidates.map((item) => {
+                      const selected = groupScreeningIds.includes(item.id);
+                      const disabled = !selected && groupScreeningIds.length >= 2;
+                      return <button type="button" key={item.id} className={selected ? 'active' : ''} disabled={disabled} onClick={() => toggleGroupScreening(item)}>
+                        <span><strong>{item.movie.title}</strong><small>{formatShowing(item.starts_at, item.venue.timezone, { timeStyle: 'short' })}–{formatShowing(item.ends_at, item.venue.timezone, { timeStyle: 'short' })}</small></span>
+                        {selected ? <Check size={18} /> : <Plus size={18} />}
+                      </button>;
+                    })}
+                    {groupCandidates.length === 0 && <p>No later experiences currently have 15 places available at this venue today.</p>}
+                  </div>
+                </div>}
               </section>
 
               <section className="booking-panel" aria-labelledby="details-title">
@@ -279,7 +381,7 @@ export default function MovieBooking() {
                 </div>
                 <div className="booking-policy">
                   <h3>Before you pay</h3>
-                  <ul><li>Arrive at least 15 minutes before the selected session.</li><li>This booking is valid only for the selected date, time and experience.</li><li>Full payment is collected now. Bookings are non-refundable and cannot be rescheduled.</li><li>A missed session cannot be used for admission to a later session.</li></ul>
+                  <ul><li>Arrive at least 15 minutes before the first selected session.</li><li>This booking is valid only for the selected {bookingType === 'group' ? 'three-experience itinerary' : 'date, time and experience'}.</li><li>Full payment is collected now. Bookings are non-refundable and cannot be rescheduled.</li><li>A missed experience cannot be moved to another session.</li>{bookingType === 'group' && <li>The group package admits exactly 15 people. The same party attends all three selected experiences.</li>}</ul>
                   <label><input type="checkbox" checked={policyAccepted} onChange={(event) => { setPolicyAccepted(event.target.checked); setMessage(''); }} />
                     <span>I understand and accept the HyperView booking and arrival policy.</span></label>
                 </div>
@@ -299,17 +401,19 @@ export default function MovieBooking() {
               </>}
               <div className="order-summary__line" />
               <div className="order-summary__items">
-                {ticketTypes.filter((type) => quantities[type.id] > 0).map((type) => (
+                {bookingType === 'individual' && ticketTypes.filter((type) => quantities[type.id] > 0).map((type) => (
                   <div key={type.id}><span>{quantities[type.id]} × {type.name}</span><strong>{formatKobo(Number(type.price_kobo) * quantities[type.id])}</strong></div>
                 ))}
-                {!ticketCount && <p>No tickets selected yet.</p>}
+                {bookingType === 'group' && <><div><span>15-person group package</span><strong>{formatKobo(totalKobo)}</strong></div>
+                  <div className="order-summary__itinerary"><small>1. {movie.title}</small>{groupSelections.map((item, index) => <small key={item.id}>{index + 2}. {item.movie.title} · {formatShowing(item.starts_at, item.venue.timezone, { timeStyle: 'short' })}</small>)}</div></>}
+                {bookingType === 'individual' && !ticketCount && <p>No tickets selected yet.</p>}
               </div>
-              <div className="order-summary__total"><span>Subtotal</span><strong>{formatKobo(totalKobo)}</strong></div>
+              <div className="order-summary__total"><span>{bookingType === 'group' ? 'Package total' : 'Subtotal'}</span><strong>{formatKobo(totalKobo)}</strong></div>
               <div className="order-summary__total order-summary__total--paid"><span>Full payment due now</span><strong>{formatKobo(totalKobo)}</strong></div>
-              {screening && <p className="order-summary__fees"><Info size={14} /> Arrive by {formatShowing(new Date(new Date(screening.starts_at).getTime() - Number(screening.admission_opens_minutes || 15) * 60000), screening.venue.timezone, { timeStyle: 'short' })}. This booking expires {formatShowing(new Date(new Date(screening.ends_at).getTime() + Number(screening.admission_grace_minutes || 30) * 60000), screening.venue.timezone, { dateStyle: 'medium', timeStyle: 'short' })} and cannot be used for another session.</p>}
+              {screening && <p className="order-summary__fees"><Info size={14} /> Arrive by {formatShowing(new Date(new Date(screening.starts_at).getTime() - Number(screening.admission_opens_minutes || 15) * 60000), screening.venue.timezone, { timeStyle: 'short' })}. This booking is valid only for the selected {bookingType === 'group' ? 'three-experience itinerary' : 'session'} and cannot be rescheduled.</p>}
               <p className="order-summary__fees"><Info size={14} /> Price and availability are confirmed by the server before Paystack opens.</p>
               {message && <p className="booking-error" role="alert">{message}</p>}
-              <button className="ticket-button ticket-button--pay" type="submit" disabled={submitting || !ticketTypes.length}>
+              <button className="ticket-button ticket-button--pay" type="submit" disabled={submitting || !ticketTypes.length || (bookingType === 'group' && groupSelections.length !== 2)}>
                 <LockKeyhole size={17} /> {submitting ? 'Opening Paystack…' : 'Continue to secure payment'}
               </button>
               <p className="order-summary__secure"><ShieldCheck size={16} /> Secure checkout powered by Paystack</p>

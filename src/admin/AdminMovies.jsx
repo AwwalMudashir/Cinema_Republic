@@ -8,7 +8,32 @@ import { assertResult, uploadPoster } from './catalogue';
 import { adminFunction } from './api';
 import { clearDraft, draftKey, readDraft, saveDraft } from './drafts';
 
-const emptyMovie = { title: '', slug: '', tagline: '', synopsis: '', genre: '', rating: '', language: 'English', runtime_minutes: '', status: 'draft', featured: false, poster_path: '' };
+const emptyMovie = { title: '', slug: '', tagline: '', synopsis: '', genre: '', rating: '', language: 'English', runtime_minutes: '15', status: 'draft', featured: false, poster_path: '' };
+const movieGenres = [
+  'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama',
+  'Family', 'Fantasy', 'Historical', 'Horror', 'Musical', 'Mystery', 'Romance',
+  'Science Fiction', 'Sports', 'Thriller', 'War', 'Western',
+];
+const movieRatings = [
+  { value: 'G', label: 'G — Suitable for all audiences' },
+  { value: 'PG', label: 'PG — Parental guidance advised' },
+  { value: '12', label: '12 — Ages 12 and above' },
+  { value: '12A', label: '12A — Under 12 only with an adult' },
+  { value: '15', label: '15 — Ages 15 and above' },
+  { value: '18', label: '18 — Adults only' },
+  { value: 'RE', label: 'RE — Restricted exhibition' },
+];
+
+function createMovieSlug(title) {
+  const cleanedTitle = title.normalize('NFKD')
+    .replace(/[\u0300-\u036f]/gu, '')
+    .toLowerCase()
+    .replace(/&/gu, ' and ')
+    .replace(/[^a-z0-9]+/gu, '-')
+    .replace(/^-+|-+$/gu, '');
+  const readablePart = (cleanedTitle || 'movie').slice(0, 140).replace(/-+$/gu, '') || 'movie';
+  return `${readablePart}-${crypto.randomUUID().slice(0, 8)}`;
+}
 
 export function AdminMovies() {
   const [movies, setMovies] = useState([]);
@@ -76,23 +101,28 @@ export function AdminMovieForm() {
   async function save(event) {
     event.preventDefault(); setBusy(true); setError('');
     try {
-      const slug = movie.slug.trim().toLowerCase();
-      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(slug)) throw new Error('Use lowercase letters, numbers and hyphens for the URL slug.');
+      const title = movie.title.trim();
+      const description = movie.synopsis.trim();
+      const genre = movie.genre?.trim();
+      const rating = movie.rating?.trim();
+      const language = movie.language.trim();
+      if (!title || !description || !genre || !rating || !language) throw new Error('Movie name, description, movie type, age rating and language are required.');
+      const slug = movie.slug?.trim() || createMovieSlug(title);
       if (movie.status === 'published' && !movie.poster_path && !poster) throw new Error('Upload a poster before publishing.');
       const publishAfterUpload = movie.status === 'published' && Boolean(poster) && !movie.poster_path;
-      const values = { title: movie.title.trim(), slug, tagline: movie.tagline.trim() || null,
-        synopsis: movie.synopsis.trim(), genre: movie.genre.trim() || null,
-        rating: movie.rating.trim() || null, language: movie.language.trim(),
+      const values = { title, slug, tagline: movie.tagline?.trim() || null,
+        synopsis: description, genre,
+        rating, language,
         runtime_minutes: movie.runtime_minutes ? Number(movie.runtime_minutes) : null,
         status: publishAfterUpload ? 'draft' : movie.status,
         featured: Boolean(movie.featured), updated_at: new Date().toISOString() };
-      if (!values.title || !values.synopsis || !values.language) throw new Error('Title, synopsis and language are required.');
       const saved = isNew && !savedId
         ? assertResult(await supabase.from('movies').insert(values).select('id').single())
         : assertResult(await supabase.from('movies').update(values).eq('id', savedId || id).select('id').single());
-      let nextMovie = movie;
+      let nextMovie = { ...movie, slug };
       if (isNew && !savedId) {
         setSavedId(saved.id);
+        setMovie(nextMovie);
         saveDraft(movieDraftKey, { movie: nextMovie, savedId: saved.id });
       }
       if (poster) {
@@ -130,31 +160,38 @@ export function AdminMovieForm() {
     finally { setBusy(false); }
   }
   return <main className="admin-content"><div className="admin-page-header"><Link className="admin-back" to="/admin/movies"><ArrowLeft size={16} /> Movie library</Link>
-    <p className="admin-overline">Catalogue / {isNew ? 'New film' : 'Edit film'}</p><h1>{isNew ? 'Add a movie' : movie.title}</h1><p>Keep credits, imagery and descriptions accurate and approved.</p></div>
-    {loading ? <p>Loading film…</p> : <form className="admin-form-grid" onSubmit={save}>
-      <section className="admin-panel"><h2>Film details</h2><div className="admin-fields">
-        <label>Title<input required maxLength={160} value={movie.title} onChange={(e) => update('title', e.target.value)} /></label>
-        <label>URL slug<input required maxLength={160} value={movie.slug} placeholder="the-movie-title" onChange={(e) => update('slug', e.target.value)} /></label>
-        <label className="admin-field-wide">Tagline<input maxLength={180} value={movie.tagline || ''} onChange={(e) => update('tagline', e.target.value)} /></label>
-        <label className="admin-field-wide">Synopsis<textarea required rows={5} value={movie.synopsis} onChange={(e) => update('synopsis', e.target.value)} /></label>
-        <label>Genre<input value={movie.genre || ''} onChange={(e) => update('genre', e.target.value)} /></label>
-        <label>Age rating<input value={movie.rating || ''} placeholder="15 / 12A / PG" onChange={(e) => update('rating', e.target.value)} /></label>
+    <p className="admin-overline">Movies / {isNew ? 'New movie' : 'Edit movie'}</p><h1>{isNew ? 'Add a movie' : movie.title}</h1><p>Add the information and pictures customers need to recognise this movie.</p></div>
+    {loading ? <p>Loading movie…</p> : <form className="admin-form-grid" onSubmit={save}>
+      <section className="admin-panel"><h2>Movie information</h2><div className="admin-fields">
+        <label className="admin-field-wide">Movie name<input required maxLength={160} value={movie.title} onChange={(e) => update('title', e.target.value)} /></label>
+        <label className="admin-field-wide"><span>Short promotional line <small>Optional</small></span><input maxLength={180} value={movie.tagline || ''} placeholder="A short line that introduces the movie" onChange={(e) => update('tagline', e.target.value)} /></label>
+        <label className="admin-field-wide">About the movie<textarea required rows={5} value={movie.synopsis} placeholder="Briefly explain what the movie is about" onChange={(e) => update('synopsis', e.target.value)} /></label>
+        <label>Movie type<select required value={movie.genre || ''} onChange={(e) => update('genre', e.target.value)}>
+          <option value="">Choose a movie type</option>
+          {movie.genre && !movieGenres.includes(movie.genre) && <option value={movie.genre}>{movie.genre} (existing)</option>}
+          {movieGenres.map((genre) => <option key={genre} value={genre}>{genre}</option>)}
+        </select></label>
+        <label>Age rating<select required value={movie.rating || ''} onChange={(e) => update('rating', e.target.value)}>
+          <option value="">Choose an age rating</option>
+          {movie.rating && !movieRatings.some((rating) => rating.value === movie.rating) && <option value={movie.rating}>{movie.rating} (existing)</option>}
+          {movieRatings.map((rating) => <option key={rating.value} value={rating.value}>{rating.label}</option>)}
+        </select></label>
         <label>Language<input required value={movie.language} onChange={(e) => update('language', e.target.value)} /></label>
-        <label>Runtime (minutes)<input type="number" min="1" value={movie.runtime_minutes || ''} onChange={(e) => update('runtime_minutes', e.target.value)} /></label>
+        <label>Length in minutes<input type="number" min="1" value={movie.runtime_minutes || ''} onChange={(e) => update('runtime_minutes', e.target.value)} /></label>
       </div></section>
-      <aside className="admin-form-side"><section className="admin-panel"><h2>Poster artwork</h2>
+      <aside className="admin-form-side"><section className="admin-panel"><h2>Movie poster</h2>
         <div className="admin-poster-preview">{posterPreview || movie.poster_path
           ? <img src={posterPreview || posterUrl(movie.poster_path)} alt={posterPreview ? 'Selected poster preview' : 'Uploaded movie poster'} />
           : <ImagePlus size={36} />}</div>
         {(poster || movie.poster_path) && <p className="admin-poster-caption">{poster ? 'Preview ready · Uploads when you save the movie' : 'Poster uploaded'}</p>}
-        <label>Upload approved artwork<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setPoster(e.target.files?.[0] || null)} /></label>
-        <small>JPG, PNG or WebP · 5 MB max. Only artwork cleared by the distributor should be published. Re-select files after a page reload.</small>
-        <label className="admin-backdrop-input">Optional wide backdrop<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setBackdrop(e.target.files?.[0] || null)} /></label>
-        {movie.backdrop_path && <small>Current backdrop: {movie.backdrop_path}</small>}</section>
-        <section className="admin-panel"><h2>Visibility</h2><label>Status<select value={movie.status} onChange={(e) => update('status', e.target.value)}>
+        <label>Choose poster image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setPoster(e.target.files?.[0] || null)} /></label>
+        <small>JPG, PNG or WebP · 5 MB maximum. Use only an image the company has permission to publish. You must choose the file again after reloading the page.</small>
+        <label className="admin-backdrop-input">Optional wide background image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setBackdrop(e.target.files?.[0] || null)} /></label>
+        {movie.backdrop_path && <small>A wide background image has already been uploaded.</small>}</section>
+        <section className="admin-panel"><h2>Publishing</h2><label>Display status<select value={movie.status} onChange={(e) => update('status', e.target.value)}>
           <option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option>
-        </select></label><label className="admin-checkbox admin-featured-toggle"><input type="checkbox" checked={Boolean(movie.featured)} onChange={(e) => update('featured', e.target.checked)} /> Feature on site</label>
-          <p className="admin-help">Publishing alone does not accept bookings. Add a future scheduled session and its General Admission capacity.</p></section>
+        </select></label><label className="admin-checkbox admin-featured-toggle"><input type="checkbox" checked={Boolean(movie.featured)} onChange={(e) => update('featured', e.target.checked)} /> Show prominently on the website</label>
+          <p className="admin-help">Publishing the movie makes it available for the website. Customers can only book it after you add a future session with available seats.</p></section>
         {!isNew && profile?.role === 'admin' && <section className="admin-panel admin-danger-zone"><h2>Delete movie</h2>
           <p>Permanent deletion is allowed only when this movie has no sessions, checkout records or issued admissions. If customer history exists, archive it instead.</p>
           <button className="admin-button admin-button--danger" type="button" disabled={busy} onClick={deleteMovie}><Trash2 size={16} /> {busy ? 'Checking…' : 'Delete movie'}</button>

@@ -35,11 +35,6 @@ function bearerToken(request: Request): string {
   return match[1];
 }
 
-export function posterUrl(path: unknown): string | null {
-  if (typeof path !== "string" || !path.trim()) return null;
-  return getAdminClient().storage.from("movie-posters").getPublicUrl(path).data.publicUrl;
-}
-
 export async function handleStaffGate(request: Request, action: GateAction): Promise<Response> {
   try {
     if (request.method === "OPTIONS") return optionsResponse(request);
@@ -100,11 +95,6 @@ export async function handleStaffGate(request: Request, action: GateAction): Pro
     }
 
     const result = data as Record<string, unknown>;
-    if (result?.movie && typeof result.movie === "object") {
-      const movie = result.movie as Record<string, unknown>;
-      result.movie = { ...movie, poster_url: posterUrl(movie.poster_path) };
-      delete (result.movie as Record<string, unknown>).poster_path;
-    }
     return jsonResponse(request, result, result?.reason === "not_found" ? 404 : 200);
   } catch (error) {
     return handleError(request, error);

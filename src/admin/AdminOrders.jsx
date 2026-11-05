@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, Mail, ReceiptText, RefreshCw, Search, Ticket } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { formatKobo, formatShowing } from '../lib/catalog';
+import { formatKobo, formatShowing, formatValidityEnd } from '../lib/catalog';
 import { adminFunction } from './api';
 
 export default function AdminOrders() {
@@ -59,7 +59,7 @@ export default function AdminOrders() {
             {order.payment?.provider_reference && <p className="admin-help">Paystack transaction reference: <strong>{order.payment.provider_reference}</strong></p>}
             {order.refund && <p className="admin-help">Latest Paystack refund event: {order.refund.status} · {formatKobo(order.refund.amount_kobo)}. A partial refund requires manual review.</p>}
             <h3>Purchased items</h3>{order.items?.map((item, index) => <p className="admin-order-item" key={`${item.type}-${index}`}>
-              <span>{item.quantity} × {item.type} · {item.session || item.movie}<small>{formatShowing(item.showtime, 'Africa/Lagos', { dateStyle: 'medium', timeStyle: 'short' })} · {item.venue}</small></span>
+              <span>{item.quantity} × {item.type} · {item.access_mode === 'flex_pass' ? 'Flexible admission' : item.session || item.movie}<small>{item.access_mode === 'flex_pass' ? `Any operating session · expires ${formatValidityEnd(item.valid_until, 'Africa/Lagos', { dateStyle: 'medium', timeStyle: 'short' })}` : formatShowing(item.showtime, 'Africa/Lagos', { dateStyle: 'medium', timeStyle: 'short' })} · {item.venue}</small></span>
               <strong>{item.included ? 'Included' : item.package_total ? `${formatKobo(item.unit_price_kobo)} package total` : `${formatKobo(item.unit_price_kobo)} each`}</strong></p>)}
             {order.tickets?.length > 0 && <><h3>Tickets</h3><div className="admin-ticket-links">{order.tickets.map((ticket) =>
               <Link key={ticket.public_id} to={`/ticket/${ticket.public_id}`}><Ticket size={15} /> {ticket.public_id} · {ticket.status}</Link>)}</div></>}

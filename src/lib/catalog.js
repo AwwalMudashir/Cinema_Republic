@@ -34,9 +34,29 @@ export function formatShowing(value, timeZone = 'Africa/Lagos', options = {}) {
   }).format(new Date(value));
 }
 
+// Flexible passes use an exclusive midnight database boundary. Present the
+// preceding minute so customers see the final eligible day (Thursday/Sunday),
+// rather than the first ineligible day (Friday/Monday at 12:00 am).
+export function formatValidityEnd(value, timeZone = 'Africa/Lagos', options = {}) {
+  return formatShowing(new Date(new Date(value).getTime() - 1_000), timeZone, options);
+}
+
 export function posterUrl(path) {
   if (!path || !supabase) return '/og_cultural.jpeg';
   return supabase.storage.from('movie-posters').getPublicUrl(path).data.publicUrl;
+}
+
+export async function loadAdmissionProducts() {
+  if (!supabase) throw new Error('Online admission is not configured yet. Add the Supabase site variables.');
+  const { data, error } = await runCatalogueQuery(
+    supabase.rpc('public_flex_pass_products'), 'Current admission prices',
+  );
+  if (error) throw new Error(`Could not load admission tickets: ${error.message}`);
+  return (Array.isArray(data) ? data : []).map((item) => ({
+    ...item,
+    individual_price_kobo: Number(item.individual_price_kobo),
+    group_price_kobo: Number(item.group_price_kobo),
+  }));
 }
 
 export async function loadSessionProgramme() {

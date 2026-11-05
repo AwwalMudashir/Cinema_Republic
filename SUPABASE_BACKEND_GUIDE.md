@@ -1,10 +1,10 @@
 # Cinema57 Supabase backend and ticketing guide
 
-This guide is the implementation blueprint for the React and Supabase booking system. The current product is **session-only HyperView 9D Flying Cinema booking**. Customers choose either a 30-minute individual session for 1–15 guests or an exclusive 45-minute package for exactly 15 guests. Customers do not choose movies: staff select two 15-minute films for an individual session or three 15-minute films for a group session.
+This guide is the implementation blueprint for the React and Supabase booking system. The current product is **flexible HyperView admission**. Customers buy individual tickets or one 15-person group package without selecting a movie, date or session time. Each admission can be redeemed once at any operating session before its current business-band expiry.
 
-> **Current-schema note (5 November 2026):** migrations `20261104130000_session_only_booking.sql` and `20261105090000_group_session_packages.sql` supersede the movie-selection instructions retained later in this document as historical schema context. New records use `screenings.movie_id = null`; the old `movies` table remains only so existing audit/payment history is not destroyed.
+> **Current-schema note (5 November 2026):** migration `20261105120000_flexible_week_band_tickets.sql` supersedes the scheduled-session customer flow retained later in this document as historical context. The database keeps hidden, automatically generated validity-window inventory rows so the proven payment/ticket audit structure remains compatible; neither customers nor admins create or select sessions for new sales.
 
-The public Sessions page reads future `on_sale` session records directly from Supabase, including a coming-soon preview before ticket sales open. The payment, ticket and staff flows are implemented locally but are **not live** until the migrations and Edge Functions are deployed, DNS/secrets are set, and Paystack test payments have passed. Do not accept real payments before the full test checklist passes.
+The public Tickets page reads the current Lagos-time validity window and server-authoritative prices. The payment, ticket and staff flows are **not live** until the migrations and Edge Functions are deployed and Paystack test payments have passed. Do not accept real payments before the full test checklist passes.
 
 ## Hosting architecture: no separate Node.js server
 
@@ -38,12 +38,13 @@ The original secure payment foundation remains in place. Two later migrations ex
 - `20261104120000_session_pricing_and_group_packages.sql`
 - `20261104130000_session_only_booking.sql`
 - `20261105090000_group_session_packages.sql`
+- `20261105120000_flexible_week_band_tickets.sql`
 
-The last two migrations establish the current product: movie-free sessions, database-enforced 30/45-minute durations, server-priced individual and group checkout, session-safe public/ticket/staff queries and bulk session generation. The older movie-based group itinerary remains only for historical compatibility and is not exposed by the current UI.
+The final migration establishes the current flexible product. Earlier movie/session migrations remain applied because paid records, Paystack idempotency, QR tickets, reception and audit logs depend on them, but their public scheduling flow is no longer exposed.
 
-Business weekdays are Monday–Thursday and weekends are Friday–Sunday. Each pricing rule contains individual per-person prices and exclusive 15-person group totals for both day bands. The selected session date is interpreted in the venue timezone (`Africa/Lagos`). An active pricing rule selected directly on a session overrides the automatic effective venue/global rule. Do not reintroduce browser-authoritative pricing.
+Business weekdays are Monday–Thursday and weekends are Friday–Sunday. Each pricing rule contains individual per-person prices and 15-person group totals for both bands. The purchase instant is interpreted in `Africa/Lagos`: a Monday–Thursday purchase expires at Friday 00:00, while a Friday–Sunday purchase expires at Monday 00:00. The boundary is exclusive, so the UI describes it as Thursday night or Sunday night. Do not reintroduce browser-authoritative pricing.
 
-Current operational rules are also enforced by Postgres: individual sessions are exactly 30 minutes and accept 1–15 admissions up to their configured capacity; group sessions are exactly 45 minutes, have a locked capacity of 15 and accept only one 15-person package. One venue cannot have overlapping active sessions. A group payment is the configured package total, not a per-person price multiplied by 15. One group hold or paid order fills the session. The public site and checkout only read rows where `movie_id is null`.
+Postgres enforces the current rules: individual checkout accepts 1–15 one-use admissions; group checkout is exactly 15 people and charges the configured group total once. New purchases are not tied to a movie or time. The server derives the venue, price and validity end, and ticket redemption remains atomic so a ticket cannot be used twice. Expiry never carries into the next business band.
 
 After applying the migrations, redeploy the Functions whose session, confirmation, email or staff payloads changed:
 
@@ -64,16 +65,16 @@ npx.cmd supabase functions deploy admin-catalogue
 
 ## What the customer flow will do
 
-1. The customer selects an available individual or group session. Individual checkout chooses 1–15 admissions; group checkout is fixed at exactly 15 guests.
+1. The customer chooses individual admission or the fixed 15-person group package. They do not select a movie or time.
 2. They provide a name, phone number and email address.
-3. They accept the session-only, 15-minute-early, non-refundable and no-rescheduling policy.
-4. The backend calculates the correct Monday–Thursday or Friday–Sunday price from the session-selected rule (or automatic effective fallback). Individual sessions charge per guest; group sessions charge one package total. It then creates a ten-minute capacity hold.
+3. They accept the one-use, current-band expiry and non-refundable policy.
+4. The backend calculates the correct Monday–Thursday or Friday–Sunday price from the purchase instant and creates a ten-minute pending order.
 5. Paystack collects the full payment.
 6. A verified Paystack webhook changes the order to `paid` and creates one internal admission per guest.
-7. Resend sends one booking confirmation and booking QR containing the reference, session, party size, total, validity and arrival instructions.
+7. Resend sends one booking confirmation and QR containing the reference, party size, total, exact expiry and arrival instructions.
 8. The cashier retrieves the paid booking and registers the party at reception, where physical tags are issued.
 9. The supervisor verifies and redeems individual admissions when guests enter.
-10. Unused admissions become inactive `no_show` records after the session-specific grace period; they are never valid for a later session.
+10. Unused admissions become inactive `no_show` records at the business-band boundary and never carry into the next band.
 
 The payment callback page in the browser is not proof of payment. Only the webhook/server-side Paystack verification may create tickets.
 

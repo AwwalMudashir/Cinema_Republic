@@ -24,6 +24,7 @@ export type FulfilledOrder = {
   booking_type?: "individual" | "group";
   experience_count?: number | string;
   duration_minutes?: number | string;
+  access_mode?: "scheduled" | "flex_pass";
   session_title?: string;
   movie_title?: string;
   starts_at: string;
@@ -57,6 +58,10 @@ function formatDateTime(value: string, timeZone: string): string {
   }).format(new Date(value));
 }
 
+function formatValidityEnd(value: string, timeZone: string): string {
+  return formatDateTime(new Date(new Date(value).getTime() - 1_000).toISOString(), timeZone);
+}
+
 function formatNaira(amountKobo: number | string): string {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
@@ -68,6 +73,7 @@ function textVersion(order: FulfilledOrder, siteUrl: string): string {
   const bookingUrl = `${siteUrl}/booking/${order.booking_public_id}`;
   const sessionTitle = order.session_title || order.movie_title || "HyperView 9D session";
   const isGroup = order.booking_type === "group";
+  const isFlexible = order.access_mode === "flex_pass";
   const duration = Number(order.duration_minutes || (isGroup ? 45 : 30));
   const films = Number(order.experience_count || (isGroup ? 3 : 2));
 
@@ -79,16 +85,16 @@ function textVersion(order: FulfilledOrder, siteUrl: string): string {
     `Contact: ${order.customer_email} · ${order.customer_phone}`,
     `Guests: ${order.quantity}`,
     `Total paid: ${formatNaira(order.amount_kobo)}`,
-    `Session: ${formatDateTime(order.starts_at, order.venue_timezone)}`,
+    isFlexible ? "Visit time: any operating session within the validity window" : `Session: ${formatDateTime(order.starts_at, order.venue_timezone)}`,
     `Venue: ${order.venue_name}, ${order.venue_address}, ${order.venue_city}`,
-    `Admission opens: ${formatDateTime(order.valid_from, order.venue_timezone)}`,
-    `Booking expires: ${formatDateTime(order.valid_until, order.venue_timezone)}`,
+    isFlexible ? "Admission: valid after successful payment" : `Admission opens: ${formatDateTime(order.valid_from, order.venue_timezone)}`,
+    `Booking expires: ${isFlexible ? formatValidityEnd(order.valid_until, order.venue_timezone) : formatDateTime(order.valid_until, order.venue_timezone)}`,
     "",
     `Open booking: ${bookingUrl}`,
     "",
-    `This ${duration}-minute${isGroup ? " exclusive 15-person group" : ""} session includes ${films} staff-selected 15-minute films.`,
-    "Arrive at least 15 minutes before the session. Reception will verify this booking and issue physical identification tags.",
-    "The booking is valid only for the selected session. It is non-refundable and cannot be rescheduled.",
+    isFlexible ? `This is a one-use ${isGroup ? "15-person group pass" : "admission ticket"} for any operating session before expiry.` : `This ${duration}-minute${isGroup ? " exclusive 15-person group" : ""} session includes ${films} staff-selected 15-minute films.`,
+    isFlexible ? "No movie or time was selected online. Reception will verify the booking and staff will coordinate the visit." : "Arrive at least 15 minutes before the session. Reception will verify this booking and issue physical identification tags.",
+    isFlexible ? "The ticket does not carry into the next weekday/weekend band. It is non-refundable and cannot be extended." : "The booking is valid only for the selected session. It is non-refundable and cannot be rescheduled.",
     "Keep the booking link and QR code private.",
   ].join("\n");
 }
@@ -121,6 +127,7 @@ export async function sendTicketEmail(
   const siteUrl = getSiteUrl();
   const sessionTitle = order.session_title || order.movie_title || "HyperView 9D session";
   const isGroup = order.booking_type === "group";
+  const isFlexible = order.access_mode === "flex_pass";
   const duration = Number(order.duration_minutes || (isGroup ? 45 : 30));
   const films = Number(order.experience_count || (isGroup ? 3 : 2));
   const bookingUrl = `${siteUrl}/booking/${order.booking_public_id}`;
@@ -150,7 +157,7 @@ export async function sendTicketEmail(
           <p>Your full payment was successful. Present this booking QR code at reception.</p>
           <div style="padding:18px;background:#efe8da;border-radius:12px;line-height:1.7;">
             <strong>${escapeHtml(sessionTitle)}</strong><br />
-            ${escapeHtml(formatDateTime(order.starts_at, order.venue_timezone))}<br />
+            ${isFlexible ? "Any operating session before expiry" : escapeHtml(formatDateTime(order.starts_at, order.venue_timezone))}<br />
             ${escapeHtml(order.venue_name)}, ${escapeHtml(order.venue_address)}, ${escapeHtml(order.venue_city)}<br />
             Booking reference: ${escapeHtml(order.reference)}<br />
             Customer: ${escapeHtml(order.customer_name)}<br />
@@ -160,7 +167,7 @@ export async function sendTicketEmail(
           </div>
           <div style="margin:20px 0;padding:18px;background:#f7f3ea;border-radius:12px;line-height:1.7;">
             <strong>What your session includes</strong><br />
-            One ${duration}-minute ${isGroup ? "exclusive 15-person group " : ""}HyperView experience with ${films} staff-selected 15-minute films.
+            ${isFlexible ? `One-use ${isGroup ? "15-person group pass" : "admission ticket"}. No movie or time is selected online.` : `One ${duration}-minute ${isGroup ? "exclusive 15-person group " : ""}HyperView experience with ${films} staff-selected 15-minute films.`}
           </div>
           <div style="margin:20px 0;padding:22px;border:1px solid #e7e2d8;border-radius:16px;background:#fff;text-align:center;">
             <p style="margin:0 0 4px;color:#6b665d;font-size:12px;text-transform:uppercase;letter-spacing:1.5px;">Booking QR</p>
@@ -170,10 +177,10 @@ export async function sendTicketEmail(
           </div>
           <div style="padding:18px;border-left:4px solid #d89b4a;background:#fff7e8;line-height:1.7;font-size:13px;">
             <strong>Arrival instructions</strong><br />
-            Arrive at least 15 minutes before the session. Reception will verify the booking and issue physical identification tags.<br />
-            Admission opens ${escapeHtml(formatDateTime(order.valid_from, order.venue_timezone))}. The booking expires ${escapeHtml(formatDateTime(order.valid_until, order.venue_timezone))}.
+            ${isFlexible ? "Visit during operating hours. Reception will verify the booking and staff will coordinate admission." : "Arrive at least 15 minutes before the session. Reception will verify the booking and issue physical identification tags."}<br />
+            ${isFlexible ? "Valid after successful payment" : `Admission opens ${escapeHtml(formatDateTime(order.valid_from, order.venue_timezone))}`}. The booking expires ${escapeHtml(isFlexible ? formatValidityEnd(order.valid_until, order.venue_timezone) : formatDateTime(order.valid_until, order.venue_timezone))}.
           </div>
-          <p style="margin:24px 0 0;color:#6b665d;font-size:13px;line-height:1.6;">This booking is valid only for the selected session. It is non-refundable and cannot be rescheduled. Keep this QR code private.</p>
+          <p style="margin:24px 0 0;color:#6b665d;font-size:13px;line-height:1.6;">${isFlexible ? "This one-use ticket can be redeemed at any operating session before expiry and does not carry into the next validity band." : "This booking is valid only for the selected session."} It is non-refundable. Keep this QR code private.</p>
         </div>
       </div>
     </body>

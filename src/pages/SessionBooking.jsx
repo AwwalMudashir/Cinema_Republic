@@ -1,123 +1,86 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CalendarDays, Check, Clock3, Info, LockKeyhole, MapPin, Minus, Plus, ShieldCheck, Ticket } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
-import useSessionProgramme from '../hooks/useSessionProgramme';
-import { formatKobo, formatShowing, invokeFunction } from '../lib/catalog';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, CalendarRange, CheckCircle2, Info, LockKeyhole, MapPin, Minus, Plus, ShieldCheck, Ticket, UsersRound } from 'lucide-react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import useAdmissionProducts from '../hooks/useAdmissionProducts';
+import { formatKobo, formatValidityEnd, invokeFunction } from '../lib/catalog';
 import { hyperViewLive } from '../lib/hyperview';
 import '../components/ticketing.css';
 
 const checkoutTokenKey = (reference) => `cinema57:order:${reference}`;
 
-function BookingState({ title, message }) {
-  return <main className="booking-not-found"><Ticket size={42} /><h1>{title}</h1><p>{message}</p>
-    <Link className="ticket-button ticket-button--primary" to="/sessions">View sessions</Link></main>;
+function PageState({ title, message }) {
+  return <main className="booking-not-found"><Ticket size={42} /><h1>{title}</h1><p>{message}</p><Link className="ticket-button ticket-button--primary" to="/tickets">View tickets</Link></main>;
 }
 
 export default function SessionBooking() {
-  const { sessionId } = useParams();
-  const { sessions, loading, error } = useSessionProgramme();
-  const [selectedId, setSelectedId] = useState(sessionId || '');
-  const [quantity, setQuantity] = useState(1);
+  const { passType } = useParams();
+  const [searchParams] = useSearchParams();
+  const { products, loading, error } = useAdmissionProducts();
+  const isGroup = passType === 'group';
+  const validType = passType === 'individual' || isGroup;
+  const requestedVenue = searchParams.get('venue');
+  const product = products.find((item) => item.venue_id === requestedVenue) || products[0];
+  const [quantity, setQuantity] = useState(isGroup ? 15 : 1);
   const [customer, setCustomer] = useState({ name: '', email: '', phone: '' });
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { if (sessionId) setSelectedId(sessionId); }, [sessionId]);
-  const bookable = useMemo(() => sessions.filter((session) => session.isBookable), [sessions]);
-  const screening = bookable.find((session) => session.id === selectedId)
-    || (!sessionId ? bookable[0] : null);
-  const ticket = screening?.ticketTypes[0];
-  const isGroup = screening?.sessionKind === 'group';
-  const activeSessionId = screening?.id;
-  const activeSessionKind = screening?.sessionKind;
-  const durationMinutes = isGroup ? 45 : 30;
-  const filmCount = isGroup ? 3 : 2;
-  const dates = useMemo(() => {
-    const seen = new Set();
-    return bookable.filter((item) => {
-      const key = formatShowing(item.starts_at, item.venue.timezone, { year: 'numeric', month: '2-digit', day: '2-digit' });
-      if (seen.has(key)) return false; seen.add(key); return true;
-    });
-  }, [bookable]);
-  const selectedDay = screening && formatShowing(screening.starts_at, screening.venue.timezone, { year: 'numeric', month: '2-digit', day: '2-digit' });
-  const times = bookable.filter((item) => formatShowing(item.starts_at, item.venue.timezone, { year: 'numeric', month: '2-digit', day: '2-digit' }) === selectedDay);
-  const totalKobo = Number(ticket?.price_kobo || 0) * (isGroup ? 1 : quantity);
-  const maxQuantity = isGroup ? 15 : Math.max(1, Math.min(15, ticket?.remaining ?? 15));
-
-  useEffect(() => {
-    if (activeSessionId) setQuantity(activeSessionKind === 'group' ? 15 : 1);
-  }, [activeSessionId, activeSessionKind]);
-
-  const chooseSession = (id) => {
-    const next = bookable.find((item) => item.id === id);
-    setSelectedId(id); setQuantity(next?.sessionKind === 'group' ? 15 : 1);
-    setPolicyAccepted(false); setMessage('');
-  };
+  useEffect(() => { setQuantity(isGroup ? 15 : 1); setPolicyAccepted(false); }, [isGroup]);
+  const unitPrice = Number(isGroup ? product?.group_price_kobo : product?.individual_price_kobo) || 0;
+  const totalKobo = isGroup ? unitPrice : unitPrice * quantity;
+  const expiry = product && formatValidityEnd(product.valid_until, product.venue_timezone, { dateStyle: 'full', timeStyle: 'short' });
 
   async function checkout(event) {
     event.preventDefault();
-    if (!screening?.isBookable || !ticket) return;
-    if ((isGroup && quantity !== 15) || (!isGroup && (quantity < 1 || quantity > maxQuantity))) {
-      setMessage(isGroup ? 'A group package must reserve exactly 15 places.' : 'Choose a valid number of tickets.'); return;
-    }
+    if (!product || !validType) return;
+    if ((isGroup && quantity !== 15) || (!isGroup && (quantity < 1 || quantity > 15))) { setMessage('Choose a valid ticket quantity.'); return; }
     if (!customer.name.trim() || !customer.email.trim() || !customer.phone.trim()) { setMessage('Add your name, email and Nigerian phone number.'); return; }
-    if (!policyAccepted) { setMessage('Please accept the session and payment policy before continuing.'); return; }
+    if (!policyAccepted) { setMessage('Please accept the admission and expiry policy before continuing.'); return; }
     setSubmitting(true); setMessage('');
     try {
       const result = await invokeFunction('initialize-payment', {
-        screening_id: screening.id,
-        items: [{ ticket_type_id: ticket.id, quantity }], customer,
-        policy: { version: 'hyperview-session-v3', accepted: true },
+        venue_id: product.venue_id, booking_type: isGroup ? 'group' : 'individual', quantity, customer,
+        policy: { version: 'hyperview-flex-pass-v1', accepted: true },
       });
       const url = new URL(result.authorization_url);
-      if (url.protocol !== 'https:' || url.hostname !== 'checkout.paystack.com' || !result.reference || !result.order_access_token) {
-        throw new Error('The payment link was not valid. Please try again.');
-      }
+      if (url.protocol !== 'https:' || url.hostname !== 'checkout.paystack.com' || !result.reference || !result.order_access_token) throw new Error('The payment link was not valid. Please try again.');
       sessionStorage.setItem(checkoutTokenKey(result.reference), result.order_access_token);
       window.location.assign(url.href);
     } catch (checkoutError) { setMessage(checkoutError.message); setSubmitting(false); }
   }
 
-  if (loading) return <BookingState title="Finding your session…" message="Loading available dates and times." />;
-  if (error) return <BookingState title="Booking is unavailable" message={error} />;
-  if (!screening) return <BookingState title="That session is unavailable" message="Choose another available time." />;
+  if (!validType) return <PageState title="Ticket type unavailable" message="Choose individual admission or the 15-person group package." />;
+  if (loading) return <PageState title="Preparing today’s ticket…" message="Confirming the current price and expiry window." />;
+  if (error) return <PageState title="Online admission is unavailable" message={error} />;
+  if (!product) return <PageState title="Online admission is unavailable" message="No active venue or price is configured right now." />;
 
-  return <main className="booking-page"><section className="booking-cover session-booking-cover">
-    <img src={hyperViewLive.photos[0].src} alt="" /><div className="booking-cover__veil" />
-    <div className="ticket-shell booking-cover__content"><Link to="/sessions" className="booking-back"><ArrowLeft size={17} /> All sessions</Link>
-      <div><p className="ticket-kicker">HyperView 9D Flying Cinema</p><h1>{isGroup ? 'Reserve your group session' : 'Book your individual session'}</h1>
-        <p>{isGroup ? 'Exactly 15 guests enjoy three immersive 15-minute films in one exclusive session.' : 'Enjoy two immersive 15-minute films selected and coordinated by the HyperView team.'}</p>
-        <div className="booking-cover__meta"><span>{durationMinutes} minutes</span><span>{filmCount} films</span><span>{isGroup ? '15 guests' : 'Individual booking'}</span></div></div>
-    </div></section>
-    <section className="booking-workspace"><div className="ticket-shell"><div className="booking-progress"><span className="active"><i>1</i> Session</span><span><i>2</i> Guests</span><span><i>3</i> Payment</span></div>
-      <form className="booking-layout" onSubmit={checkout}><div className="booking-panels">
-        <section className="booking-panel"><div className="booking-panel__heading"><span>01</span><div><h2>Choose your session</h2><p>Individual sessions last 30 minutes; group sessions last 45 minutes.</p></div></div>
-          <div className="date-picker">{dates.map((item) => { const day = formatShowing(item.starts_at, item.venue.timezone, { year: 'numeric', month: '2-digit', day: '2-digit' }); return <button type="button" className={selectedDay === day ? 'active' : ''} key={item.id} onClick={() => chooseSession(item.id)}><small>{formatShowing(item.starts_at, item.venue.timezone, { weekday: 'short' })}</small><strong>{formatShowing(item.starts_at, item.venue.timezone, { day: 'numeric' })}</strong><span>{formatShowing(item.starts_at, item.venue.timezone, { month: 'short' })}</span>{selectedDay === day && <Check size={15} />}</button>; })}</div>
-          <div className="time-picker">{times.map((item) => <button type="button" key={item.id} className={item.id === screening.id ? 'active' : ''} onClick={() => chooseSession(item.id)}><Clock3 size={17} /> {formatShowing(item.starts_at, item.venue.timezone, { timeStyle: 'short' })}</button>)}</div>
-          <p className="showtime-venue"><MapPin size={16} /> {screening.venue.name}, {screening.venue.city}</p>
-          <p className="session-price-note"><Info size={15} /> {['Fri', 'Sat', 'Sun'].includes(formatShowing(screening.starts_at, screening.venue.timezone, { weekday: 'short' })) ? 'Friday–Sunday price' : 'Monday–Thursday price'} applied automatically.</p>
-        </section>
-        <section className="booking-panel"><div className="booking-panel__heading"><span>02</span><div><h2>{isGroup ? 'Your group package' : 'How many guests?'}</h2><p>{isGroup ? 'The package reserves the entire session for exactly 15 people.' : 'Each guest receives one admission to this session.'}</p></div></div>
-          <div className="ticket-options"><div className="ticket-option"><div><h3>{isGroup ? 'Exclusive group session' : 'Session admission'}</h3><p>{durationMinutes} minutes · {filmCount} staff-selected films · {isGroup ? '15 guests fixed' : `${ticket?.remaining ?? 'Available'} places remaining`}</p></div><strong>{formatKobo(ticket?.price_kobo || 0)} {isGroup ? 'total' : 'per person'}</strong>
-            {isGroup ? <div className="quantity-control quantity-control--fixed"><span>15 guests</span></div>
-              : <div className="quantity-control"><button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1}><Minus size={16} /></button><span>{quantity}</span><button type="button" onClick={() => setQuantity((value) => Math.min(maxQuantity, value + 1))} disabled={quantity >= maxQuantity}><Plus size={16} /></button></div>}</div></div>
-        </section>
-        <section className="booking-panel"><div className="booking-panel__heading"><span>03</span><div><h2>Where should we send your confirmation?</h2><p>We will email your booking reference and QR code.</p></div></div>
-          <div className="customer-fields"><label className="field field--wide">Full name<input value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} autoComplete="name" maxLength={120} required /></label>
-            <label className="field">Email address<input type="email" value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} autoComplete="email" maxLength={254} required /></label>
-            <label className="field">Nigerian phone number<input type="tel" value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} autoComplete="tel" maxLength={24} required /></label></div>
-          <div className="booking-policy"><h3>Before you pay</h3><ul><li>Arrive at least 15 minutes before the selected session.</li><li>{isGroup ? 'The package covers exactly 15 guests in one 45-minute session with three films.' : 'Each admission covers one 30-minute session with two films.'}</li><li>The films are selected and played by staff at the centre.</li><li>Payment is non-refundable and the session cannot be rescheduled.</li></ul>
-            <label><input type="checkbox" checked={policyAccepted} onChange={(event) => { setPolicyAccepted(event.target.checked); setMessage(''); }} /><span>I understand and accept the HyperView session policy.</span></label></div>
-        </section>
-      </div><aside className="order-summary"><p className="order-summary__eyebrow">Your booking</p><div className="order-summary__movie session-summary-mark"><Ticket size={30} /><div><h2>{isGroup ? 'HyperView group session' : 'HyperView session'}</h2><p>{filmCount} films · {durationMinutes} minutes</p></div></div>
-        <div className="order-summary__detail"><CalendarDays size={18} /><div><small>Date</small><strong>{formatShowing(screening.starts_at, screening.venue.timezone, { dateStyle: 'full' })}</strong></div></div>
-        <div className="order-summary__detail"><Clock3 size={18} /><div><small>Time</small><strong>{formatShowing(screening.starts_at, screening.venue.timezone, { timeStyle: 'short' })}</strong></div></div>
-        <div className="order-summary__detail"><MapPin size={18} /><div><small>Venue</small><strong>{screening.venue.name}, {screening.venue.city}</strong></div></div><div className="order-summary__line" />
-        <div className="order-summary__items"><div><span>{isGroup ? '15-person group package' : `${quantity} × Session admission`}</span><strong>{formatKobo(totalKobo)}</strong></div></div>
-        <div className="order-summary__total"><span>Total</span><strong>{formatKobo(totalKobo)}</strong></div><div className="order-summary__total order-summary__total--paid"><span>Full payment due now</span><strong>{formatKobo(totalKobo)}</strong></div>
-        <p className="order-summary__fees"><Info size={14} /> Arrive 15 minutes early. Price and capacity are confirmed by the server.</p>{message && <p className="booking-error" role="alert">{message}</p>}
-        <button className="ticket-button ticket-button--pay" disabled={submitting || !ticket}><LockKeyhole size={17} /> {submitting ? 'Opening Paystack…' : 'Continue to secure payment'}</button><p className="order-summary__secure"><ShieldCheck size={16} /> Secure checkout powered by Paystack</p>
-      </aside></form></div></section>
+  return <main className="booking-page flex-checkout-page"><section className="booking-cover session-booking-cover"><img src={hyperViewLive.photos[0].src} alt="" /><div className="booking-cover__veil" />
+    <div className="ticket-shell booking-cover__content"><Link to="/tickets" className="booking-back"><ArrowLeft size={17} /> All tickets</Link><div><p className="ticket-kicker">HyperView flexible admission</p>
+      <h1>{isGroup ? 'Buy a 15-person group pass' : 'Buy individual admission'}</h1><p>No movie or time selection. Pay now and attend any operating session before this ticket window expires.</p>
+      <div className="booking-cover__meta"><span>One-time admission</span><span>Any operating session</span><span>{product.band === 'weekday' ? 'Mon–Thu window' : 'Fri–Sun window'}</span></div></div></div></section>
+    <section className="booking-workspace"><div className="ticket-shell"><form className="booking-layout" onSubmit={checkout}><div className="booking-panels">
+      <section className="booking-panel flex-expiry-panel"><div className="booking-panel__heading"><span>01</span><div><h2>Your ticket window</h2><p>The expiry is fixed by the day you purchase.</p></div></div>
+        <div className="flex-expiry-visual"><CalendarRange size={34} /><div><small>Valid after successful payment</small><strong>Expires {expiry}</strong><p>{product.band === 'weekday' ? 'This weekday ticket will not carry into Friday.' : 'This weekend ticket will not carry into Monday.'}</p></div></div>
+        <div className="flex-any-session"><CheckCircle2 size={20} /><div><strong>No session booking needed</strong><p>Come during operating hours and join any available session. Staff choose and coordinate the films at the centre.</p></div></div>
+        <p className="showtime-venue"><MapPin size={16} /> {product.venue_name}, {product.venue_address}, {product.venue_city}</p>
+      </section>
+      <section className="booking-panel"><div className="booking-panel__heading"><span>02</span><div><h2>{isGroup ? 'Your group package' : 'How many tickets?'}</h2><p>{isGroup ? 'One group visit for exactly 15 people.' : 'Each ticket is a separate one-time admission.'}</p></div></div>
+        <div className="ticket-options"><div className="ticket-option"><div><h3>{isGroup ? '15-person group pass' : 'Flexible admission'}</h3><p>{isGroup ? '15 guests together · three staff-selected films' : 'One person · any operating session · one-time use'}</p></div><strong>{formatKobo(unitPrice)} {isGroup ? 'total' : 'per person'}</strong>
+          {isGroup ? <div className="quantity-control quantity-control--fixed"><UsersRound size={15} /><span>15 guests</span></div> : <div className="quantity-control"><button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1}><Minus size={16} /></button><span>{quantity}</span><button type="button" onClick={() => setQuantity((value) => Math.min(15, value + 1))} disabled={quantity >= 15}><Plus size={16} /></button></div>}</div></div>
+      </section>
+      <section className="booking-panel"><div className="booking-panel__heading"><span>03</span><div><h2>Where should we send your ticket?</h2><p>We will email your confirmation, reference and QR code.</p></div></div>
+        <div className="customer-fields"><label className="field field--wide">Full name<input value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} autoComplete="name" maxLength={120} required /></label>
+          <label className="field">Email address<input type="email" value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} autoComplete="email" maxLength={254} required /></label>
+          <label className="field">Nigerian phone number<input type="tel" value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} autoComplete="tel" maxLength={24} required /></label></div>
+        <div className="booking-policy"><h3>Before you pay</h3><ul><li>This is a one-time admission, not unlimited entry throughout the validity window.</li><li>You may attend any operating session before {expiry}.</li><li>The ticket does not carry into the next weekday/weekend band.</li><li>No movie is selected online; staff coordinate the films when you arrive.</li><li>Payment is non-refundable and the ticket cannot be rescheduled or extended.</li></ul>
+          <label><input type="checkbox" checked={policyAccepted} onChange={(event) => { setPolicyAccepted(event.target.checked); setMessage(''); }} /><span>I understand the one-use and expiry policy.</span></label></div>
+      </section>
+    </div><aside className="order-summary"><p className="order-summary__eyebrow">Your admission</p><div className="order-summary__movie session-summary-mark"><Ticket size={30} /><div><h2>{isGroup ? '15-person group pass' : 'HyperView ticket'}</h2><p>Any operating session · one use</p></div></div>
+      <div className="order-summary__detail"><CalendarRange size={18} /><div><small>Expires</small><strong>{expiry}</strong></div></div><div className="order-summary__detail"><MapPin size={18} /><div><small>Venue</small><strong>{product.venue_name}, {product.venue_city}</strong></div></div><div className="order-summary__line" />
+      <div className="order-summary__items"><div><span>{isGroup ? '15-person group package' : `${quantity} × Flexible admission`}</span><strong>{formatKobo(totalKobo)}</strong></div></div><div className="order-summary__total"><span>Total</span><strong>{formatKobo(totalKobo)}</strong></div>
+      <p className="order-summary__fees"><Info size={14} /> Price and expiry are confirmed securely by the server.</p>{message && <p className="booking-error" role="alert">{message}</p>}
+      <button className="ticket-button ticket-button--pay" disabled={submitting}><LockKeyhole size={17} /> {submitting ? 'Opening Paystack…' : 'Continue to secure payment'}</button><p className="order-summary__secure"><ShieldCheck size={16} /> Secure checkout powered by Paystack</p>
+    </aside></form></div></section>
   </main>;
 }

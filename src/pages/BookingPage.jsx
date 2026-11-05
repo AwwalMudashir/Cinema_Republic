@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CalendarDays, Clock3, MapPin, ShieldCheck, Ticket, TriangleAlert, Users } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { formatKobo, formatShowing, invokeFunction } from '../lib/catalog';
+import { formatKobo, formatShowing, formatValidityEnd, invokeFunction } from '../lib/catalog';
 import '../components/ticketing.css';
 
 export default function BookingPage() {
@@ -23,24 +23,25 @@ export default function BookingPage() {
   const presentable = status === 'paid';
   const sessionTitle = data?.session?.title || data?.movie?.title || 'HyperView 9D Flying Cinema Session';
   const isGroup = data?.booking_type === 'group' || data?.session?.kind === 'group';
+  const isFlexible = data?.access_mode === 'flex_pass' || data?.session?.access_mode === 'flex_pass';
   const durationMinutes = Number(data?.session?.duration_minutes || (isGroup ? 45 : 30));
   const filmCount = Number(data?.session?.film_count || data?.experience_count || (isGroup ? 3 : 2));
 
   return <main className="flow-page booking-confirmation-page">
     <section className="flow-hero ticket-shell"><p className="ticket-kicker"><Ticket size={16} /> HyperView 9D Flying Cinema</p>
-      <h1>{data ? 'Your session is booked.' : 'Your booking'}</h1>
-      <p>Present this confirmation at reception and arrive at least 15 minutes before your selected session.</p></section>
+      <h1>{data ? 'Your admission is confirmed.' : 'Your booking'}</h1>
+      <p>Present this confirmation at reception during its validity window.</p></section>
     <div className="ticket-shell flow-content">
       {state.loading && <article className="flow-card" role="status">Loading your booking…</article>}
-      {state.error && <article className="flow-card"><TriangleAlert size={32} /><h2>Booking unavailable</h2><p role="alert">{state.error}</p><Link to="/sessions" className="ticket-button ticket-button--primary">Browse sessions</Link></article>}
+      {state.error && <article className="flow-card"><TriangleAlert size={32} /><h2>Booking unavailable</h2><p role="alert">{state.error}</p><Link to="/tickets" className="ticket-button ticket-button--primary">View tickets</Link></article>}
       {data && <article className="booking-confirmation">
         <div className="booking-confirmation__art booking-confirmation__art--session"><Ticket size={58} aria-hidden="true" />
-          <div><p className="ticket-kicker">{isGroup ? 'Paid group package' : 'Paid session'}</p><h2>{sessionTitle}</h2><p>{durationMinutes} minutes · {filmCount} staff-selected 15-minute films<br />{data.screening.venue}, {data.screening.venue_city}</p></div></div>
+          <div><p className="ticket-kicker">{isGroup ? 'Paid group package' : 'Paid admission'}</p><h2>{isFlexible ? 'Flexible HyperView admission' : sessionTitle}</h2><p>{isFlexible ? 'Any operating session · one-time use' : `${durationMinutes} minutes · ${filmCount} staff-selected 15-minute films`}<br />{data.screening.venue}, {data.screening.venue_city}</p></div></div>
         <div className="booking-confirmation__body"><div className="booking-confirmation__heading"><div><small>Booking reference</small><strong>{data.reference}</strong></div>
           <span className={`ticket-state ticket-state--${status}`}>{status === 'paid' ? 'Confirmed' : String(status).replaceAll('_', ' ')}</span></div>
           <div className="booking-confirmation__facts">
-            <p><CalendarDays size={19} /><span><small>Date</small><strong>{formatShowing(data.screening.starts_at, zone, { dateStyle: 'full' })}</strong></span></p>
-            <p><Clock3 size={19} /><span><small>Session time</small><strong>{formatShowing(data.screening.starts_at, zone, { timeStyle: 'short' })}</strong></span></p>
+            <p><CalendarDays size={19} /><span><small>{isFlexible ? 'Valid until' : 'Date'}</small><strong>{isFlexible ? formatValidityEnd(data.valid_until, zone, { dateStyle: 'full', timeStyle: 'short' }) : formatShowing(data.screening.starts_at, zone, { dateStyle: 'full' })}</strong></span></p>
+            <p><Clock3 size={19} /><span><small>{isFlexible ? 'Visit time' : 'Session time'}</small><strong>{isFlexible ? 'Any operating session' : formatShowing(data.screening.starts_at, zone, { timeStyle: 'short' })}</strong></span></p>
             <p><Users size={19} /><span><small>Guests</small><strong>{data.quantity}{isGroup ? ' · exclusive group' : ''}</strong></span></p>
             <p><Ticket size={19} /><span><small>Total paid</small><strong>{formatKobo(data.amount_kobo)}</strong></span></p>
             <p className="booking-confirmation__wide"><MapPin size={19} /><span><small>Venue</small><strong>{data.screening.venue}, {data.screening.venue_address}, {data.screening.venue_city}</strong></span></p>
@@ -48,8 +49,8 @@ export default function BookingPage() {
           {presentable && <div className="booking-confirmation__qr"><img src={data.qr_data_url} alt="QR code containing this booking URL" />
             <div><h3>Present at reception</h3><p>Staff will confirm payment, register your party and issue physical identification tags.</p></div></div>}
           <div className="booking-policy-card"><ShieldCheck size={21} /><div><strong>Arrival and validity</strong>
-            <p>Arrive at least 15 minutes early. Admission opens {formatShowing(data.valid_from, zone, { dateStyle: 'medium', timeStyle: 'short' })} and this booking expires {formatShowing(data.valid_until, zone, { dateStyle: 'medium', timeStyle: 'short' })}.</p>
-            <p>The booking is valid only for this selected session. It is non-refundable and cannot be rescheduled.</p></div></div>
+            <p>{isFlexible ? 'Use once at any operating session' : `Admission opens ${formatShowing(data.valid_from, zone, { dateStyle: 'medium', timeStyle: 'short' })}`}. This booking expires {isFlexible ? formatValidityEnd(data.valid_until, zone, { dateStyle: 'medium', timeStyle: 'short' }) : formatShowing(data.valid_until, zone, { dateStyle: 'medium', timeStyle: 'short' })}.</p>
+            <p>{isFlexible ? 'It does not carry into the next weekday/weekend band.' : 'The booking is valid only for this selected session.'} It is non-refundable.</p></div></div>
           {!presentable && <p className="flow-warning">This booking cannot be used for admission. Contact the cinema if you need assistance.</p>}
         </div>
       </article>}

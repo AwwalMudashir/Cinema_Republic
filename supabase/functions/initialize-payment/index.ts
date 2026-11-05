@@ -16,14 +16,10 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
-type CheckoutItem = {
-  ticket_type_id: string;
-  quantity: number;
-};
-
 type CheckoutRequest = {
-  screening_id: string;
-  items: CheckoutItem[];
+  venue_id: string;
+  booking_type: "individual" | "group";
+  quantity: number;
   policy: {
     version: string;
     accepted: boolean;
@@ -41,6 +37,7 @@ type PendingOrder = {
   amount_kobo: number | string;
   currency: "NGN";
   expires_at: string;
+  valid_until: string;
 };
 
 type PaystackInitializeResponse = {
@@ -69,50 +66,24 @@ function normalizeNigerianPhone(value: string): string | null {
 }
 
 function validateRequest(input: unknown): CheckoutRequest {
-  if (!isRecord(input) || !isRecord(input.customer) || !isRecord(input.policy)
-    || !Array.isArray(input.items)) {
+  if (!isRecord(input) || !isRecord(input.customer) || !isRecord(input.policy)) {
     throw new HttpError(400, "invalid_request", "Checkout details are incomplete");
   }
 
-  const screeningId = typeof input.screening_id === "string"
-    ? input.screening_id.trim()
+  const venueId = typeof input.venue_id === "string"
+    ? input.venue_id.trim()
     : "";
-  if (!UUID_PATTERN.test(screeningId)) {
-    throw new HttpError(400, "invalid_screening", "Select a valid session");
+  if (!UUID_PATTERN.test(venueId)) {
+    throw new HttpError(400, "invalid_venue", "Select a valid venue");
   }
-
-  if (input.items.length !== 1) {
-    throw new HttpError(400, "invalid_items", "Select one session-admission quantity");
-  }
-
-  const seenTicketTypes = new Set<string>();
-  let totalQuantity = 0;
-  const items = input.items.map((value) => {
-    if (!isRecord(value)) {
-      throw new HttpError(400, "invalid_items", "A ticket selection is invalid");
-    }
-
-    const ticketTypeId = typeof value.ticket_type_id === "string"
-      ? value.ticket_type_id.trim()
-      : "";
-    const quantity = value.quantity;
-
-    const validQuantity = Number.isInteger(quantity)
-      && Number(quantity) >= 1 && Number(quantity) <= 15;
-    if (!UUID_PATTERN.test(ticketTypeId) || !validQuantity) {
-      throw new HttpError(400, "invalid_items", "A ticket selection is invalid");
-    }
-    if (seenTicketTypes.has(ticketTypeId)) {
-      throw new HttpError(400, "duplicate_ticket_type", "Combine duplicate ticket types");
-    }
-
-    seenTicketTypes.add(ticketTypeId);
-    totalQuantity += Number(quantity);
-    return { ticket_type_id: ticketTypeId, quantity: Number(quantity) };
-  });
-
-  if (totalQuantity > 15) {
-    throw new HttpError(400, "too_many_tickets", "A maximum of 15 tickets is allowed per order");
+  const bookingType = input.booking_type;
+  const quantity = input.quantity;
+  if ((bookingType !== "individual" && bookingType !== "group")
+    || !Number.isInteger(quantity)
+    || (bookingType === "group" ? quantity !== 15 : Number(quantity) < 1 || Number(quantity) > 15)) {
+    throw new HttpError(400, "invalid_ticket_selection", bookingType === "group"
+      ? "The group package is for exactly 15 guests"
+      : "Choose between 1 and 15 individual admissions");
   }
 
   const name = typeof input.customer.name === "string" ? input.customer.name.trim() : "";
@@ -131,14 +102,15 @@ function validateRequest(input: unknown): CheckoutRequest {
   if (!phone) {
     throw new HttpError(400, "invalid_phone", "Enter a valid Nigerian phone number");
   }
-  if (input.policy.accepted !== true || input.policy.version !== "hyperview-session-v3") {
+  if (input.policy.accepted !== true || input.policy.version !== "hyperview-flex-pass-v1") {
     throw new HttpError(400, "policy_not_accepted", "Accept the booking policy before payment");
   }
 
   return {
-    screening_id: screeningId,
-    items,
-    policy: { version: "hyperview-session-v3", accepted: true },
+    venue_id: venueId,
+    booking_type: bookingType,
+    quantity: Number(quantity),
+    policy: { version: "hyperview-flex-pass-v1", accepted: true },
     customer: { name, email, phone },
   };
 }
@@ -147,6 +119,12 @@ function databaseError(error: { message?: string } | null): HttpError {
   const message = error?.message ?? "";
   if (message.includes("SCREENING_NOT_FOUND")) {
     return new HttpError(404, "screening_not_found", "The session was not found");
+  }
+  if (message.includes("VENUE_NOT_ACTIVE")) {
+    return new HttpError(409, "venue_unavailable", "This venue is not currently accepting online admission");
+  }
+  if (message.includes("ADMISSION_WINDOW_CLOSED")) {
+    return new HttpError(409, "window_closed", "This admission window has just closed. Refresh to see the new validity period");
   }
   if (message.includes("SCREENING_NOT_ON_SALE") || message.includes("SALES_CLOSED")) {
     return new HttpError(409, "sales_closed", "Bookings are not currently open for this session");
@@ -158,10 +136,10 @@ function databaseError(error: { message?: string } | null): HttpError {
     return new HttpError(409, "insufficient_capacity", "There are not enough tickets remaining");
   }
   if (message.includes("PRICE_RULE_NOT_FOUND")) {
-    return new HttpError(409, "price_unavailable", "Pricing has not been configured for this session");
+    return new HttpError(409, "price_unavailable", "Admission pricing has not been configured for this venue");
   }
   if (message.includes("GROUP_PRICE_NOT_CONFIGURED")) {
-    return new HttpError(409, "group_price_unavailable", "Group pricing has not been configured for this session");
+    return new HttpError(409, "group_price_unavailable", "Group pricing has not been configured for this venue");
   }
   if (message.includes("INVALID_GROUP_SIZE") || message.includes("INVALID_GROUP_CAPACITY")) {
     return new HttpError(409, "invalid_group_session", "This group session must be reserved for exactly 15 guests");
@@ -210,9 +188,10 @@ export default {
       const orderAccessToken = randomToken();
       const accessTokenHash = await hmacHex(hashSecret, orderAccessToken);
       const policyAcceptedAt = new Date().toISOString();
-      const { data, error } = await admin.rpc("create_hyperview_session_order_v3", {
-        p_screening_id: checkout.screening_id,
-        p_items: checkout.items,
+      const { data, error } = await admin.rpc("create_hyperview_flex_order", {
+        p_venue_id: checkout.venue_id,
+        p_booking_type: checkout.booking_type,
+        p_quantity: checkout.quantity,
         p_customer_name: checkout.customer.name,
         p_customer_email: checkout.customer.email,
         p_customer_phone: checkout.customer.phone,
@@ -245,7 +224,7 @@ export default {
             callback_url: `${getSiteUrl()}/payment/callback`,
             metadata: {
               order_id: order.order_id,
-              product: "hyperview_session_booking",
+              product: "hyperview_flexible_admission",
               policy_version: checkout.policy.version,
             },
           }),
@@ -300,6 +279,7 @@ export default {
         reference: order.reference,
         order_access_token: orderAccessToken,
         expires_at: order.expires_at,
+        valid_until: order.valid_until,
       }, 201);
     } catch (error) {
       return handleError(request, error);

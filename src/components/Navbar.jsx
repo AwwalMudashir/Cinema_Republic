@@ -6,7 +6,7 @@ import './components.css';
 
 const navItems = [
   { label: 'Home', to: '/' },
-  ...(PUBLIC_TICKETING_ENABLED ? [{ label: 'Book HyperView', to: '/sessions' }] : []),
+  ...(PUBLIC_TICKETING_ENABLED ? [{ label: 'Buy tickets', to: '/tickets' }] : []),
   { label: 'About', to: '/about-us' },
   { label: 'Events', to: '/events' },
   { label: 'Partnership', to: '/partnership' },
@@ -36,7 +36,7 @@ const Navbar = () => {
         <ul className="site-nav__links">
           {navItems.map((item) => <li key={item.to}><NavLink to={item.to} end={item.to === '/'}>{item.label}</NavLink></li>)}
         </ul>
-        {PUBLIC_TICKETING_ENABLED && <Link to="/sessions" className="site-nav__ticket"><Ticket size={16} /> Book a session</Link>}
+        {PUBLIC_TICKETING_ENABLED && <Link to="/tickets" className="site-nav__ticket"><Ticket size={16} /> Buy tickets</Link>}
         <button type="button" className="site-nav__toggle" onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-controls="mobile-navigation" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}>
           {menuOpen ? <X size={27} /> : <Menu size={27} />}
         </button>
@@ -45,7 +45,7 @@ const Navbar = () => {
           <ul>
             {navItems.map((item, index) => <li key={item.to}><span>0{index + 1}</span><NavLink to={item.to} end={item.to === '/'} onClick={() => setMenuOpen(false)}>{item.label}</NavLink></li>)}
           </ul>
-          {PUBLIC_TICKETING_ENABLED && <Link className="site-nav__mobile-ticket" to="/sessions" onClick={() => setMenuOpen(false)}><Ticket size={18} /> Book HyperView 9D</Link>}
+          {PUBLIC_TICKETING_ENABLED && <Link className="site-nav__mobile-ticket" to="/tickets" onClick={() => setMenuOpen(false)}><Ticket size={18} /> Buy HyperView tickets</Link>}
         </div>
       </div>
     </nav>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Clock3, TicketCheck, TriangleAlert } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { formatKobo, invokeFunction } from '../lib/catalog';
+import { formatKobo, formatValidityEnd, invokeFunction } from '../lib/catalog';
 import '../components/ticketing.css';
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -49,6 +49,7 @@ export default function PaymentCallback() {
   const paid = state.status === 'paid';
   const support = state.status === 'payment_review' || state.requiresSupport;
   const isGroup = state.booking_type === 'group';
+  const isFlexible = state.access_mode === 'flex_pass';
   const durationMinutes = Number(state.duration_minutes || (isGroup ? 45 : 30));
   const filmCount = Number(state.experience_count || (isGroup ? 3 : 2));
   return (
@@ -75,10 +76,10 @@ export default function PaymentCallback() {
           {state.error && <p className="flow-warning" role="alert">{state.error}</p>}
           {paid && <><div className="callback-booking-summary">
             <p><strong>{state.session_title || 'HyperView 9D Flying Cinema Session'}</strong></p><p>{state.quantity} guest{state.quantity === 1 ? '' : 's'} · {state.venue_name}, {state.venue_city}</p>
-            <p>{durationMinutes} minutes with {filmCount} staff-selected 15-minute films{isGroup ? ' for an exclusive group of 15' : ''}. Arrive at least 15 minutes before your session. The booking is non-refundable and cannot be rescheduled.</p>
+            <p>{isFlexible ? `Use this one-time admission at any operating session before ${formatValidityEnd(state.valid_until, state.venue_timezone, { dateStyle: 'full', timeStyle: 'short' })}. It does not carry into the next validity band.` : `${durationMinutes} minutes with ${filmCount} staff-selected 15-minute films${isGroup ? ' for an exclusive group of 15' : ''}. Arrive at least 15 minutes before your session.`} The booking is non-refundable.</p>
           </div>
             {state.booking_public_id && <Link className="ticket-button ticket-button--primary" to={`/booking/${state.booking_public_id}`}><TicketCheck size={21} /> Open booking confirmation</Link>}</>}
-          {!state.loading && !paid && <Link className="ticket-button ticket-button--primary" to="/sessions">Browse sessions</Link>}
+          {!state.loading && !paid && <Link className="ticket-button ticket-button--primary" to="/tickets">View tickets</Link>}
         </article>
       </div>
     </main>

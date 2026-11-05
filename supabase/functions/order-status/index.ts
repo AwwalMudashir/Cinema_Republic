@@ -37,9 +37,12 @@ type OrderStatusResult = {
   booking_type: "individual" | "group";
   experience_count: number | string;
   duration_minutes: number | string;
+  access_mode: "scheduled" | "flex_pass";
   session_title: string;
   starts_at: string;
   ends_at: string;
+  valid_from: string | null;
+  valid_until: string;
   venue_name: string;
   venue_city: string;
   venue_timezone: string;
@@ -135,9 +138,12 @@ export default {
         booking_type: result.booking_type,
         experience_count: Number(result.experience_count),
         duration_minutes: Number(result.duration_minutes),
+        access_mode: result.access_mode,
         session_title: result.session_title,
         starts_at: result.starts_at,
         ends_at: result.ends_at,
+        valid_from: result.valid_from,
+        valid_until: result.valid_until,
         venue_name: result.venue_name,
         venue_city: result.venue_city,
         venue_timezone: result.venue_timezone,

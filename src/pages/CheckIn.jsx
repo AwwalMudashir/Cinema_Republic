@@ -3,7 +3,7 @@ import {
   Camera, CheckCircle2, LogOut, ScanLine,
   ShieldCheck, TicketCheck, TriangleAlert,
 } from 'lucide-react';
-import { formatShowing } from '../lib/catalog';
+import { formatShowing, formatValidityEnd } from '../lib/catalog';
 import { supabase } from '../lib/supabase';
 import { useAdminAuth } from '../admin/auth-context';
 import '../components/ticketing.css';
@@ -153,6 +153,7 @@ export default function CheckIn() {
   const zone = screening?.venue_timezone || 'Africa/Lagos';
   const durationMinutes = Number(sessionDetails?.duration_minutes || 30);
   const filmCount = Number(sessionDetails?.film_count || 2);
+  const isFlexible = result?.booking?.access_mode === 'flex_pass' || sessionDetails?.access_mode === 'flex_pass';
   return (
     <main className="flow-page gate-page">
       <section className="flow-hero ticket-shell">
@@ -197,12 +198,12 @@ export default function CheckIn() {
               </p>
               {sessionDetails && <div className="gate-ticket-details">
                 <TicketCheck size={38} aria-hidden="true" />
-                <div><h3>{sessionDetails.title}</h3><p>{ticket?.type} · {durationMinutes} minutes · {filmCount} films</p></div>
+                <div><h3>{isFlexible ? 'Flexible HyperView admission' : sessionDetails.title}</h3><p>{ticket?.type} · {isFlexible ? 'any operating session · one-time use' : `${durationMinutes} minutes · ${filmCount} films`}</p></div>
               </div>}
               {ticket && <p className="gate-detail"><strong>Holder</strong><span>{ticket.holder_name}</span></p>}
               {ticket?.arrived_at && <p className="gate-detail"><strong>Registered at reception</strong><span>{formatShowing(ticket.arrived_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>}
               {screening && <>
-                <p className="gate-detail"><strong>Session</strong><span>{formatShowing(screening.starts_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>
+                <p className="gate-detail"><strong>{isFlexible ? 'Valid until' : 'Session'}</strong><span>{isFlexible ? formatValidityEnd(ticket.valid_until, zone, { dateStyle: 'medium', timeStyle: 'short' }) : formatShowing(screening.starts_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>
                 <p className="gate-detail"><strong>Venue</strong><span>{screening.venue}, {screening.venue_city}</span></p>
               </>}
               {ticket?.checked_in_at && <p className="gate-detail"><strong>Checked in</strong><span>{formatShowing(ticket.checked_in_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>}

@@ -76,7 +76,7 @@ export default function AdminPricing() {
   }
 
   return <main className="admin-content"><div className="admin-page-header"><p className="admin-overline">Commerce / Pricing</p>
-    <h1>Session pricing</h1><p>Set individual per-person prices and the total price for an exclusive 15-person group session.</p></div>
+    <h1>Admission pricing</h1><p>Set individual per-person prices and the total price for a 15-person group visit.</p></div>
     <div className="admin-two-column"><section className="admin-panel"><h2>Effective rules <span className="admin-count">{rules.length}</span></h2>
       <div className="admin-list">{rules.map((item) => <button type="button" className="admin-list-item" key={item.id} onClick={() => edit(item)}>
         <span className="admin-list-icon"><CalendarRange size={19} /></span><span><strong>{item.name}</strong>
@@ -98,7 +98,7 @@ export default function AdminPricing() {
         <label>Effective from<input required type="date" value={rule.effective_from} onChange={(e) => update('effective_from', e.target.value)} /></label>
         <label>Effective until (optional)<input type="date" value={rule.effective_until} onChange={(e) => update('effective_until', e.target.value)} /></label>
         <label className="admin-checkbox"><input type="checkbox" checked={rule.is_active} onChange={(e) => update('is_active', e.target.checked)} /> Rule is active</label></div>
-      <p className="admin-help">Individual prices are per guest. Group prices are charged once for exactly 15 guests in one 45-minute session. A session-specific rule overrides the automatic date rule.</p>
+      <p className="admin-help">Individual prices are per guest. Group prices are charged once for exactly 15 guests. Monday–Thursday and Friday–Sunday prices are chosen automatically from the purchase date.</p>
       {error && <p className="admin-error" role="alert">{error}</p>}{notice && <p className="admin-success" role="status">{notice}</p>}
       <button className="admin-button admin-button--primary" disabled={busy}><BadgeDollarSign size={17} /> {busy ? 'Saving…' : 'Save pricing rule'}</button>
     </form></div>

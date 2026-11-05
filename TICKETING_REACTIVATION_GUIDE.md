@@ -4,7 +4,7 @@ Last updated: 5 November 2026
 
 ## 1. Current decision and release state
 
-Cinema Republic has approved restarting development of online booking for **HyperView 9D Flying Cinema**. The current implementation is session-only: the customer purchases places for one date and time, rather than selecting a movie or buying a reusable general-entry ticket.
+Cinema Republic has approved online booking for **HyperView 9D Flying Cinema**. The current implementation sells one-use flexible admission: customers do not choose a movie, date or time and may attend any operating session before the current business-band expiry.
 
 The implementation is present. Both switches are currently enabled in this working/staging branch for end-to-end testing:
 
@@ -13,33 +13,32 @@ export const PUBLIC_TICKETING_ENABLED = true;
 export const TICKETING_ADMIN_ENABLED = true;
 ```
 
-Keep Paystack in test mode while this branch is under acceptance testing. Before merging to production, confirm pricing, sessions, Paystack payment, email, reception and admission have all passed on staging; otherwise turn the public switch back off.
+Keep Paystack in test mode while this branch is under acceptance testing. Before merging to production, confirm pricing, flexible validity, Paystack payment, email, reception and admission have all passed on staging; otherwise turn the public switch back off.
 
 ## 1.1 Approved HyperView business rules
 
-- Every booking is tied to one specific session, date and time.
-- An individual session lasts 30 minutes, accepts 1–15 guests up to its configured capacity, and includes two staff-selected 15-minute films.
-- An exclusive group session lasts 45 minutes, is fixed at exactly 15 guests, and includes three staff-selected 15-minute films.
+- Every purchased admission is one-use and is not tied to a movie or time slot.
+- A Monday–Thursday purchase expires at the end of Thursday and never carries into Friday.
+- A Friday–Sunday purchase expires at the end of Sunday and never carries into Monday.
+- Individual checkout accepts 1–15 tickets. Each ticket admits one person once.
+- The group package is fixed at exactly 15 guests, is used for one group visit and includes three staff-selected films.
 - Customers do not select movies. Staff select and play the films at the centre.
 - Full payment is collected online through Paystack; there is no outstanding balance at reception.
 - Monday–Thursday individual admission is **₦10,500 per person**.
 - Friday–Sunday individual admission is **₦12,500 per person**.
 - Prices are effective-dated database rules and can be changed for November 2026 without a frontend deployment.
-- One **General admission** inventory is used per session. Its capacity is the number of people who can buy that session.
-- One physical venue can have only one active session at a time; overlapping time slots are rejected by the database.
-- Individual checkout reserves 1–15 admissions subject to remaining capacity. Group checkout reserves all 15 places and charges one configured package total; it is not the individual price multiplied by 15.
+- Customers may attend any operating session while the ticket is valid; physical admission remains coordinated by reception and the supervisor.
+- Individual checkout creates 1–15 one-use admissions. Group checkout creates 15 admissions for one party and charges one configured package total; it is not the individual price multiplied by 15.
 - Pricing rules contain separate group totals for Monday–Thursday and Friday–Sunday.
 - Business weekdays are **Monday–Thursday**; business weekends are **Friday–Sunday**.
-- A session may select an active pricing rule explicitly (for example, a promotion). If no rule is selected, the active venue/global rule whose effective dates include the session date is used.
-- A pending Paystack checkout holds capacity for approximately ten minutes. This is not the customer's ticket expiry.
-- Admission opens 15 minutes before the selected session by default.
-- The booking expires after the selected session ends plus the configured operational grace period, 30 minutes by default.
-- A missed session cannot be used for a later session.
+- The active venue/global pricing rule is selected from the Lagos purchase date.
+- A pending Paystack checkout remains payable for at most ten minutes. This is not the customer's ticket expiry and it does not reserve a particular physical session.
+- Admission becomes valid after confirmed payment and expires at the current band boundary.
 - The customer must accept the non-refundable, no-rescheduling and arrival policy before Paystack opens.
 - The confirmation email contains one booking reference and booking QR for the party. Individual admissions remain in the database beneath that booking.
 - Reception registration and final admission are separate staff actions.
 
-Internal screening states map to operations as follows:
+Legacy/internal screening states remain in the database for historical bookings and compatibility. They are not managed for new flexible-pass sales:
 
 | Database status | Staff meaning |
 | --- | --- |
@@ -132,6 +131,7 @@ Important additions for the HyperView workflow are:
 - `supabase/migrations/20261104120000_session_pricing_and_group_packages.sql` — pricing-rule foundation and Friday weekend pricing.
 - `supabase/migrations/20261104130000_session_only_booking.sql` — current movie-free, fixed-30-minute session product and checkout functions.
 - `supabase/migrations/20261105090000_group_session_packages.sql` — exclusive 15-person, 45-minute group sessions and package-total checkout.
+- `supabase/migrations/20261105120000_flexible_week_band_tickets.sql` — current no-schedule admission flow and Mon–Thu/Fri–Sun expiry enforcement.
 
 ## 4. Safe reactivation sequence
 
@@ -190,8 +190,8 @@ Do **not** enable public checkout directly in production. Reactivate it in stagi
    https://STAGING_PROJECT_REF.supabase.co/functions/v1/paystack-webhook
    ```
 
-6. Confirm the pending-order job is active. Also confirm a job named `sync-hyperview-sessions` runs every minute with `select public.sync_hyperview_operations();`. The migration creates it automatically when Cron is already enabled; otherwise add it in Dashboard after enabling Cron.
-7. Add one complete test programme: active venue; an effective rule with all four individual/group prices; one future individual session; and one future group session. No movie or poster record is required.
+6. Confirm the pending-order job is active. Also confirm a job named `sync-hyperview-sessions` runs every minute with `select public.sync_hyperview_operations();`. Despite its legacy name, this job still performs secure ticket-expiry cleanup; new customers do not book a scheduled session. The migration creates it automatically when Cron is already enabled; otherwise add it in Dashboard after enabling Cron.
+7. Add an active venue and one effective pricing rule containing all four individual/group prices. No movie, poster or public session record is required.
 8. Confirm staging admin/staff accounts and role assignments.
 
 ### Phase C — enable the admin workspace on staging
@@ -206,14 +206,12 @@ Keep `PUBLIC_TICKETING_ENABLED` false. Deploy to staging and verify:
 
 - `/admin/login`
 - Role-based navigation for admin, content manager, cashier and supervisor.
-- Experience/venue/session/capacity CRUD.
+- Venue and effective pricing CRUD.
 - Weekday/weekend pricing rules and a future effective rule.
-- Bulk session creation.
 - Poster uploads.
 - Order listing and email retry.
 - Reception booking retrieval and arrival registration.
 - Supervisor verification and one-time admission.
-- Admin-only safe deletion: remove an unused session only when no checkout, payment, ticket or admission history exists. Otherwise cancel it and retain the history.
 
 This order allows staff to prepare catalogue data without exposing checkout to customers.
 
@@ -229,21 +227,21 @@ Deploy to staging and confirm that Sessions, ticket buttons, footer promotion an
 
 Run the complete customer test matrix:
 
-1. Browse future scheduled sessions; confirm no movie or genre selection appears.
-2. Verify coming-soon, sold-out and available states.
-3. Confirm Monday–Thursday sessions show the configured weekday price and Friday–Sunday sessions show the configured weekend price.
-4. Select explicit promotional rules and confirm both the individual per-person price and group package total override the automatic effective rule.
-5. Confirm individual checkout accepts 1–15 admissions up to capacity. Confirm group checkout is fixed at 15 guests and charges the package total only once.
+1. Open `/tickets`; confirm there is no movie, date or session-time selection.
+2. Confirm the page clearly shows one-time use, any operating session and the exact current expiry.
+3. Test on a Monday–Thursday date and confirm Thursday-night expiry and weekday pricing.
+4. Test on a Friday–Sunday date and confirm Sunday-night expiry and weekend pricing.
+5. Confirm individual checkout accepts 1–15 admissions. Confirm group checkout is fixed at 15 guests and charges the package total only once.
 6. Complete a Paystack test payment.
 7. Return to `/payment/callback` on the same staging hostname.
 8. Confirm webhook processing creates only one payment and one set of tickets.
-9. Confirm the booking email contains reference, session, quantity, total paid, arrival instructions, expiry and a booking QR.
+9. Confirm the booking email contains reference, quantity, total paid, one-use instructions, exact expiry and a booking QR.
 10. Open `/booking/:publicId` and confirm no private customer data is exposed.
 11. Search/scan the booking as a cashier and register the party at reception.
 12. Verify an individual admission as a supervisor without consuming it.
 13. Redeem it once and confirm the second redemption returns `already_used`.
 14. Confirm an admission cannot be redeemed before reception registration.
-15. Test failed, abandoned, duplicate-webhook, expired-order, full-session, no-show and invalid-ticket cases.
+15. Test failed, abandoned, duplicate-webhook, expired-order, Thursday/Sunday boundary, no-show and invalid-ticket cases.
 16. Test on mobile and desktop.
 
 ### Phase E — prepare production services

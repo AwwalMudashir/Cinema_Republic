@@ -151,6 +151,8 @@ export default function CheckIn() {
   const sessionDetails = result?.session || result?.movie;
   const screening = result?.screening;
   const zone = screening?.venue_timezone || 'Africa/Lagos';
+  const durationMinutes = Number(sessionDetails?.duration_minutes || 30);
+  const filmCount = Number(sessionDetails?.film_count || 2);
   return (
     <main className="flow-page gate-page">
       <section className="flow-hero ticket-shell">
@@ -195,7 +197,7 @@ export default function CheckIn() {
               </p>
               {sessionDetails && <div className="gate-ticket-details">
                 <TicketCheck size={38} aria-hidden="true" />
-                <div><h3>{sessionDetails.title}</h3><p>{ticket?.type} · 30 minutes · two films</p></div>
+                <div><h3>{sessionDetails.title}</h3><p>{ticket?.type} · {durationMinutes} minutes · {filmCount} films</p></div>
               </div>}
               {ticket && <p className="gate-detail"><strong>Holder</strong><span>{ticket.holder_name}</span></p>}
               {ticket?.arrived_at && <p className="gate-detail"><strong>Registered at reception</strong><span>{formatShowing(ticket.arrived_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</span></p>}

@@ -1,6 +1,6 @@
 # HyperView Online Booking Reactivation and Operations Guide
 
-Last updated: 4 November 2026
+Last updated: 5 November 2026
 
 ## 1. Current decision and release state
 
@@ -17,15 +17,18 @@ Keep Paystack in test mode while this branch is under acceptance testing. Before
 
 ## 1.1 Approved HyperView business rules
 
-- Every booking is tied to one specific 30-minute session, date and time.
-- Customers do not select movies. Staff select and play two 15-minute films during the booked session.
+- Every booking is tied to one specific session, date and time.
+- An individual session lasts 30 minutes, accepts 1–15 guests up to its configured capacity, and includes two staff-selected 15-minute films.
+- An exclusive group session lasts 45 minutes, is fixed at exactly 15 guests, and includes three staff-selected 15-minute films.
+- Customers do not select movies. Staff select and play the films at the centre.
 - Full payment is collected online through Paystack; there is no outstanding balance at reception.
 - Monday–Thursday individual admission is **₦10,500 per person**.
 - Friday–Sunday individual admission is **₦12,500 per person**.
 - Prices are effective-dated database rules and can be changed for November 2026 without a frontend deployment.
 - One **General admission** inventory is used per session. Its capacity is the number of people who can buy that session.
 - One physical venue can have only one active session at a time; overlapping time slots are rejected by the database.
-- One online checkout can reserve 1–15 admissions, subject to the session's remaining capacity. This is a checkout safety limit, not a separate group product.
+- Individual checkout reserves 1–15 admissions subject to remaining capacity. Group checkout reserves all 15 places and charges one configured package total; it is not the individual price multiplied by 15.
+- Pricing rules contain separate group totals for Monday–Thursday and Friday–Sunday.
 - Business weekdays are **Monday–Thursday**; business weekends are **Friday–Sunday**.
 - A session may select an active pricing rule explicitly (for example, a promotion). If no rule is selected, the active venue/global rule whose effective dates include the session date is used.
 - A pending Paystack checkout holds capacity for approximately ten minutes. This is not the customer's ticket expiry.
@@ -120,7 +123,7 @@ Do not delete the disabled pages, components or styles. In particular, preserve:
 
 Important additions for the HyperView workflow are:
 
-- `src/admin/AdminPricing.jsx` — per-person pricing for Monday–Thursday and Friday–Sunday.
+- `src/admin/AdminPricing.jsx` — individual per-person prices and 15-person group totals for Monday–Thursday and Friday–Sunday.
 - `src/admin/AdminReception.jsx` — paid-booking lookup and arrival registration.
 - `supabase/functions/booking-details/` — safe public booking display.
 - `supabase/functions/staff-bookings/` — authenticated reception operations.
@@ -128,6 +131,7 @@ Important additions for the HyperView workflow are:
 - `supabase/migrations/20261019091000_hyperview_session_booking.sql` — pricing, validity, operations and automation.
 - `supabase/migrations/20261104120000_session_pricing_and_group_packages.sql` — pricing-rule foundation and Friday weekend pricing.
 - `supabase/migrations/20261104130000_session_only_booking.sql` — current movie-free, fixed-30-minute session product and checkout functions.
+- `supabase/migrations/20261105090000_group_session_packages.sql` — exclusive 15-person, 45-minute group sessions and package-total checkout.
 
 ## 4. Safe reactivation sequence
 
@@ -187,7 +191,7 @@ Do **not** enable public checkout directly in production. Reactivate it in stagi
    ```
 
 6. Confirm the pending-order job is active. Also confirm a job named `sync-hyperview-sessions` runs every minute with `select public.sync_hyperview_operations();`. The migration creates it automatically when Cron is already enabled; otherwise add it in Dashboard after enabling Cron.
-7. Add one complete test programme: active venue, effective pricing rule, future 30-minute session and Session admission capacity. No movie or poster record is required.
+7. Add one complete test programme: active venue; an effective rule with all four individual/group prices; one future individual session; and one future group session. No movie or poster record is required.
 8. Confirm staging admin/staff accounts and role assignments.
 
 ### Phase C — enable the admin workspace on staging
@@ -228,8 +232,8 @@ Run the complete customer test matrix:
 1. Browse future scheduled sessions; confirm no movie or genre selection appears.
 2. Verify coming-soon, sold-out and available states.
 3. Confirm Monday–Thursday sessions show the configured weekday price and Friday–Sunday sessions show the configured weekend price.
-4. Select an explicit promotional rule on one session and confirm its per-person price overrides the automatic effective rule.
-5. Select a Session admission quantity and confirm the database recalculates the total in naira/kobo.
+4. Select explicit promotional rules and confirm both the individual per-person price and group package total override the automatic effective rule.
+5. Confirm individual checkout accepts 1–15 admissions up to capacity. Confirm group checkout is fixed at 15 guests and charges the package total only once.
 6. Complete a Paystack test payment.
 7. Return to `/payment/callback` on the same staging hostname.
 8. Confirm webhook processing creates only one payment and one set of tickets.

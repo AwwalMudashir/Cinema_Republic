@@ -21,6 +21,9 @@ export default function TicketPage() {
   const canPresent = data?.ticket.status === 'valid';
   const showCode = canPresent || data?.ticket.status === 'not_yet_valid';
   const sessionTitle = data?.session?.title || data?.movie?.title || 'HyperView 9D Flying Cinema Session';
+  const isGroup = data?.booking?.booking_type === 'group' || data?.session?.kind === 'group';
+  const durationMinutes = Number(data?.session?.duration_minutes || (isGroup ? 45 : 30));
+  const filmCount = Number(data?.session?.film_count || (isGroup ? 3 : 2));
   return (
     <main className="flow-page">
       <section className="flow-hero ticket-shell">
@@ -34,7 +37,7 @@ export default function TicketPage() {
         {data && <article className="digital-ticket">
           <div className="digital-ticket__art digital-ticket__art--session">
             <Ticket size={64} aria-hidden="true" />
-            <span>30-minute session</span>
+            <span>{durationMinutes}-minute session</span>
           </div>
           <div className="digital-ticket__body">
             <p className="ticket-kicker ticket-kicker--dark">Cinema Republic Naija</p>
@@ -50,7 +53,7 @@ export default function TicketPage() {
               <p><MapPin size={18} /><span>{data.screening.venue}<br />{data.screening.venue_address}, {data.screening.venue_city}</span></p>
               <p><Ticket size={18} /><span>{data.ticket.type}</span></p>
             </div>
-            <p className="digital-ticket__experience">Your session includes two 15-minute films selected and played by staff at the centre.</p>
+            <p className="digital-ticket__experience">This {isGroup ? 'exclusive 15-person group ' : ''}session includes {filmCount} staff-selected 15-minute films.</p>
             {showCode && <div className="digital-ticket__qr">
               <img src={data.qr_data_url} alt="QR code containing this ticket URL" />
               <p>Show this code to staff at the entrance.</p>

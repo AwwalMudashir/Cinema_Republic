@@ -34,6 +34,9 @@ type OrderStatusResult = {
   paid_at: string | null;
   customer_name: string;
   quantity: number | string;
+  booking_type: "individual" | "group";
+  experience_count: number | string;
+  duration_minutes: number | string;
   session_title: string;
   starts_at: string;
   ends_at: string;
@@ -129,6 +132,9 @@ export default {
         paid_at: result.paid_at,
         customer_name: result.customer_name,
         quantity: Number(result.quantity),
+        booking_type: result.booking_type,
+        experience_count: Number(result.experience_count),
+        duration_minutes: Number(result.duration_minutes),
         session_title: result.session_title,
         starts_at: result.starts_at,
         ends_at: result.ends_at,

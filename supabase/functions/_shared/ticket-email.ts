@@ -21,6 +21,9 @@ export type FulfilledOrder = {
   amount_kobo: number | string;
   currency: string;
   quantity: number | string;
+  booking_type?: "individual" | "group";
+  experience_count?: number | string;
+  duration_minutes?: number | string;
   session_title?: string;
   movie_title?: string;
   starts_at: string;
@@ -64,6 +67,9 @@ function formatNaira(amountKobo: number | string): string {
 function textVersion(order: FulfilledOrder, siteUrl: string): string {
   const bookingUrl = `${siteUrl}/booking/${order.booking_public_id}`;
   const sessionTitle = order.session_title || order.movie_title || "HyperView 9D session";
+  const isGroup = order.booking_type === "group";
+  const duration = Number(order.duration_minutes || (isGroup ? 45 : 30));
+  const films = Number(order.experience_count || (isGroup ? 3 : 2));
 
   return [
     `Hi ${order.customer_name},`,
@@ -80,7 +86,7 @@ function textVersion(order: FulfilledOrder, siteUrl: string): string {
     "",
     `Open booking: ${bookingUrl}`,
     "",
-    "This 30-minute session includes two 15-minute films selected and played by staff at the centre.",
+    `This ${duration}-minute${isGroup ? " exclusive 15-person group" : ""} session includes ${films} staff-selected 15-minute films.`,
     "Arrive at least 15 minutes before the session. Reception will verify this booking and issue physical identification tags.",
     "The booking is valid only for the selected session. It is non-refundable and cannot be rescheduled.",
     "Keep the booking link and QR code private.",
@@ -114,6 +120,9 @@ export async function sendTicketEmail(
 
   const siteUrl = getSiteUrl();
   const sessionTitle = order.session_title || order.movie_title || "HyperView 9D session";
+  const isGroup = order.booking_type === "group";
+  const duration = Number(order.duration_minutes || (isGroup ? 45 : 30));
+  const films = Number(order.experience_count || (isGroup ? 3 : 2));
   const bookingUrl = `${siteUrl}/booking/${order.booking_public_id}`;
   const dataUrl = await QRCode.toDataURL(bookingUrl, {
     errorCorrectionLevel: "M",
@@ -151,7 +160,7 @@ export async function sendTicketEmail(
           </div>
           <div style="margin:20px 0;padding:18px;background:#f7f3ea;border-radius:12px;line-height:1.7;">
             <strong>What your session includes</strong><br />
-            One 30-minute HyperView experience with two 15-minute films selected and played by staff at the centre.
+            One ${duration}-minute ${isGroup ? "exclusive 15-person group " : ""}HyperView experience with ${films} staff-selected 15-minute films.
           </div>
           <div style="margin:20px 0;padding:22px;border:1px solid #e7e2d8;border-radius:16px;background:#fff;text-align:center;">
             <p style="margin:0 0 4px;color:#6b665d;font-size:12px;text-transform:uppercase;letter-spacing:1.5px;">Booking QR</p>

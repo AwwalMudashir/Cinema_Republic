@@ -7,7 +7,7 @@ import { PUBLIC_TICKETING_ENABLED } from '../config/features';
 const Footer = () => (
   <footer className="site-footer">
     {PUBLIC_TICKETING_ENABLED && <div className="site-footer__banner">
-      <div><span><Ticket size={19} /> HyperView sessions are bookable online</span><h2>Choose a date and time for your 30-minute flight.</h2></div>
+      <div><span><Ticket size={19} /> HyperView sessions are bookable online</span><h2>Book individual admission or an exclusive 15-person flight.</h2></div>
       <Link to="/sessions">Book HyperView 9D <ArrowUpRight size={18} /></Link>
     </div>}
     <div className="site-footer__main">

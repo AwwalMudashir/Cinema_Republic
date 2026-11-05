@@ -160,6 +160,12 @@ function databaseError(error: { message?: string } | null): HttpError {
   if (message.includes("PRICE_RULE_NOT_FOUND")) {
     return new HttpError(409, "price_unavailable", "Pricing has not been configured for this session");
   }
+  if (message.includes("GROUP_PRICE_NOT_CONFIGURED")) {
+    return new HttpError(409, "group_price_unavailable", "Group pricing has not been configured for this session");
+  }
+  if (message.includes("INVALID_GROUP_SIZE") || message.includes("INVALID_GROUP_CAPACITY")) {
+    return new HttpError(409, "invalid_group_session", "This group session must be reserved for exactly 15 guests");
+  }
   if (message.includes("POLICY_NOT_ACCEPTED")) {
     return new HttpError(400, "policy_not_accepted", "Accept the booking policy before payment");
   }

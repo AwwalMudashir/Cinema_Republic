@@ -68,11 +68,13 @@ export default function AdminReception() {
       return <article className="admin-panel admin-booking-card" key={booking.id}>
         <div className="admin-booking-card__head"><div><p className="admin-overline">{booking.reference}</p><h2>{booking.session || booking.movie || 'HyperView session'}</h2></div>
           <span className={`admin-status admin-status--${booking.status}`}>{booking.status}</span></div>
+        <p className="admin-help">{booking.booking_type === 'group' ? 'Exclusive group package · exactly 15 guests · 45 minutes · 3 films' : 'Individual booking · 30 minutes · 2 films'}</p>
         <p className="admin-booking-card__customer"><strong>{booking.customer_name}</strong><span>{booking.customer_email}</span><span>{booking.customer_phone}</span></p>
         <div className="admin-order-facts"><span><small>Session</small><strong>{formatShowing(booking.starts_at, zone, { dateStyle: 'medium', timeStyle: 'short' })}</strong></span>
           <span><small>Guests</small><strong>{booking.quantity}</strong></span><span><small>Arrived</small><strong>{booking.arrived_count}</strong></span>
           <span><small>Admitted</small><strong>{booking.admitted_count}</strong></span><span><small>Paid</small><strong>{formatKobo(booking.amount_kobo)}</strong></span>
-          <span><small>Session status</small><strong>{String(booking.screening_status).replaceAll('_', ' ')}</strong></span></div>
+          <span><small>Session status</small><strong>{String(booking.screening_status).replaceAll('_', ' ')}</strong></span>
+          <span><small>Booking type</small><strong>{booking.booking_type === 'group' ? '15-person group' : 'Individual'}</strong></span></div>
         {canRegister && !fullyArrived && booking.status === 'paid' && <div className="admin-arrival-actions"><label>Physical tag notes (optional)
           <input value={notes[booking.id] || ''} maxLength={300} placeholder="e.g. Tags H21–H24" onChange={(event) => setNotes((current) => ({ ...current, [booking.id]: event.target.value }))} /></label>
           <button className="admin-button admin-button--primary" type="button" onClick={() => registerArrival(booking)} disabled={busy}><UserCheck size={17} /> Register arrival</button></div>}

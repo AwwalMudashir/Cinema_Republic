@@ -28,6 +28,11 @@ export default function SessionBooking() {
   const screening = bookable.find((session) => session.id === selectedId)
     || (!sessionId ? bookable[0] : null);
   const ticket = screening?.ticketTypes[0];
+  const isGroup = screening?.sessionKind === 'group';
+  const activeSessionId = screening?.id;
+  const activeSessionKind = screening?.sessionKind;
+  const durationMinutes = isGroup ? 45 : 30;
+  const filmCount = isGroup ? 3 : 2;
   const dates = useMemo(() => {
     const seen = new Set();
     return bookable.filter((item) => {
@@ -37,15 +42,25 @@ export default function SessionBooking() {
   }, [bookable]);
   const selectedDay = screening && formatShowing(screening.starts_at, screening.venue.timezone, { year: 'numeric', month: '2-digit', day: '2-digit' });
   const times = bookable.filter((item) => formatShowing(item.starts_at, item.venue.timezone, { year: 'numeric', month: '2-digit', day: '2-digit' }) === selectedDay);
-  const totalKobo = Number(ticket?.price_kobo || 0) * quantity;
-  const maxQuantity = Math.max(1, Math.min(15, ticket?.remaining ?? 15));
+  const totalKobo = Number(ticket?.price_kobo || 0) * (isGroup ? 1 : quantity);
+  const maxQuantity = isGroup ? 15 : Math.max(1, Math.min(15, ticket?.remaining ?? 15));
 
-  const chooseSession = (id) => { setSelectedId(id); setQuantity(1); setPolicyAccepted(false); setMessage(''); };
+  useEffect(() => {
+    if (activeSessionId) setQuantity(activeSessionKind === 'group' ? 15 : 1);
+  }, [activeSessionId, activeSessionKind]);
+
+  const chooseSession = (id) => {
+    const next = bookable.find((item) => item.id === id);
+    setSelectedId(id); setQuantity(next?.sessionKind === 'group' ? 15 : 1);
+    setPolicyAccepted(false); setMessage('');
+  };
 
   async function checkout(event) {
     event.preventDefault();
     if (!screening?.isBookable || !ticket) return;
-    if (quantity < 1 || quantity > maxQuantity) { setMessage('Choose a valid number of tickets.'); return; }
+    if ((isGroup && quantity !== 15) || (!isGroup && (quantity < 1 || quantity > maxQuantity))) {
+      setMessage(isGroup ? 'A group package must reserve exactly 15 places.' : 'Choose a valid number of tickets.'); return;
+    }
     if (!customer.name.trim() || !customer.email.trim() || !customer.phone.trim()) { setMessage('Add your name, email and Nigerian phone number.'); return; }
     if (!policyAccepted) { setMessage('Please accept the session and payment policy before continuing.'); return; }
     setSubmitting(true); setMessage('');
@@ -71,34 +86,35 @@ export default function SessionBooking() {
   return <main className="booking-page"><section className="booking-cover session-booking-cover">
     <img src={hyperViewLive.photos[0].src} alt="" /><div className="booking-cover__veil" />
     <div className="ticket-shell booking-cover__content"><Link to="/sessions" className="booking-back"><ArrowLeft size={17} /> All sessions</Link>
-      <div><p className="ticket-kicker">HyperView 9D Flying Cinema</p><h1>Book your 30-minute session</h1>
-        <p>Enjoy two immersive 15-minute films selected and coordinated by the HyperView team.</p>
-        <div className="booking-cover__meta"><span>30 minutes</span><span>Two films</span><span>One booking</span></div></div>
+      <div><p className="ticket-kicker">HyperView 9D Flying Cinema</p><h1>{isGroup ? 'Reserve your group session' : 'Book your individual session'}</h1>
+        <p>{isGroup ? 'Exactly 15 guests enjoy three immersive 15-minute films in one exclusive session.' : 'Enjoy two immersive 15-minute films selected and coordinated by the HyperView team.'}</p>
+        <div className="booking-cover__meta"><span>{durationMinutes} minutes</span><span>{filmCount} films</span><span>{isGroup ? '15 guests' : 'Individual booking'}</span></div></div>
     </div></section>
     <section className="booking-workspace"><div className="ticket-shell"><div className="booking-progress"><span className="active"><i>1</i> Session</span><span><i>2</i> Guests</span><span><i>3</i> Payment</span></div>
       <form className="booking-layout" onSubmit={checkout}><div className="booking-panels">
-        <section className="booking-panel"><div className="booking-panel__heading"><span>01</span><div><h2>Choose your session</h2><p>Select one available 30-minute date and time.</p></div></div>
+        <section className="booking-panel"><div className="booking-panel__heading"><span>01</span><div><h2>Choose your session</h2><p>Individual sessions last 30 minutes; group sessions last 45 minutes.</p></div></div>
           <div className="date-picker">{dates.map((item) => { const day = formatShowing(item.starts_at, item.venue.timezone, { year: 'numeric', month: '2-digit', day: '2-digit' }); return <button type="button" className={selectedDay === day ? 'active' : ''} key={item.id} onClick={() => chooseSession(item.id)}><small>{formatShowing(item.starts_at, item.venue.timezone, { weekday: 'short' })}</small><strong>{formatShowing(item.starts_at, item.venue.timezone, { day: 'numeric' })}</strong><span>{formatShowing(item.starts_at, item.venue.timezone, { month: 'short' })}</span>{selectedDay === day && <Check size={15} />}</button>; })}</div>
           <div className="time-picker">{times.map((item) => <button type="button" key={item.id} className={item.id === screening.id ? 'active' : ''} onClick={() => chooseSession(item.id)}><Clock3 size={17} /> {formatShowing(item.starts_at, item.venue.timezone, { timeStyle: 'short' })}</button>)}</div>
           <p className="showtime-venue"><MapPin size={16} /> {screening.venue.name}, {screening.venue.city}</p>
           <p className="session-price-note"><Info size={15} /> {['Fri', 'Sat', 'Sun'].includes(formatShowing(screening.starts_at, screening.venue.timezone, { weekday: 'short' })) ? 'Friday–Sunday price' : 'Monday–Thursday price'} applied automatically.</p>
         </section>
-        <section className="booking-panel"><div className="booking-panel__heading"><span>02</span><div><h2>How many guests?</h2><p>Each guest receives one admission to this session.</p></div></div>
-          <div className="ticket-options"><div className="ticket-option"><div><h3>Session admission</h3><p>30 minutes · two 15-minute films · {ticket?.remaining ?? 'Available'} places remaining</p></div><strong>{formatKobo(ticket?.price_kobo || 0)}</strong>
-            <div className="quantity-control"><button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1}><Minus size={16} /></button><span>{quantity}</span><button type="button" onClick={() => setQuantity((value) => Math.min(maxQuantity, value + 1))} disabled={quantity >= maxQuantity}><Plus size={16} /></button></div></div></div>
+        <section className="booking-panel"><div className="booking-panel__heading"><span>02</span><div><h2>{isGroup ? 'Your group package' : 'How many guests?'}</h2><p>{isGroup ? 'The package reserves the entire session for exactly 15 people.' : 'Each guest receives one admission to this session.'}</p></div></div>
+          <div className="ticket-options"><div className="ticket-option"><div><h3>{isGroup ? 'Exclusive group session' : 'Session admission'}</h3><p>{durationMinutes} minutes · {filmCount} staff-selected films · {isGroup ? '15 guests fixed' : `${ticket?.remaining ?? 'Available'} places remaining`}</p></div><strong>{formatKobo(ticket?.price_kobo || 0)} {isGroup ? 'total' : 'per person'}</strong>
+            {isGroup ? <div className="quantity-control quantity-control--fixed"><span>15 guests</span></div>
+              : <div className="quantity-control"><button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1}><Minus size={16} /></button><span>{quantity}</span><button type="button" onClick={() => setQuantity((value) => Math.min(maxQuantity, value + 1))} disabled={quantity >= maxQuantity}><Plus size={16} /></button></div>}</div></div>
         </section>
         <section className="booking-panel"><div className="booking-panel__heading"><span>03</span><div><h2>Where should we send your confirmation?</h2><p>We will email your booking reference and QR code.</p></div></div>
           <div className="customer-fields"><label className="field field--wide">Full name<input value={customer.name} onChange={(event) => setCustomer({ ...customer, name: event.target.value })} autoComplete="name" maxLength={120} required /></label>
             <label className="field">Email address<input type="email" value={customer.email} onChange={(event) => setCustomer({ ...customer, email: event.target.value })} autoComplete="email" maxLength={254} required /></label>
             <label className="field">Nigerian phone number<input type="tel" value={customer.phone} onChange={(event) => setCustomer({ ...customer, phone: event.target.value })} autoComplete="tel" maxLength={24} required /></label></div>
-          <div className="booking-policy"><h3>Before you pay</h3><ul><li>Arrive at least 15 minutes before the selected session.</li><li>Your admission covers one 30-minute session with two 15-minute films.</li><li>The films are selected and played by staff at the centre.</li><li>Payment is non-refundable and the session cannot be rescheduled.</li></ul>
+          <div className="booking-policy"><h3>Before you pay</h3><ul><li>Arrive at least 15 minutes before the selected session.</li><li>{isGroup ? 'The package covers exactly 15 guests in one 45-minute session with three films.' : 'Each admission covers one 30-minute session with two films.'}</li><li>The films are selected and played by staff at the centre.</li><li>Payment is non-refundable and the session cannot be rescheduled.</li></ul>
             <label><input type="checkbox" checked={policyAccepted} onChange={(event) => { setPolicyAccepted(event.target.checked); setMessage(''); }} /><span>I understand and accept the HyperView session policy.</span></label></div>
         </section>
-      </div><aside className="order-summary"><p className="order-summary__eyebrow">Your booking</p><div className="order-summary__movie session-summary-mark"><Ticket size={30} /><div><h2>HyperView session</h2><p>Two films · 30 minutes</p></div></div>
+      </div><aside className="order-summary"><p className="order-summary__eyebrow">Your booking</p><div className="order-summary__movie session-summary-mark"><Ticket size={30} /><div><h2>{isGroup ? 'HyperView group session' : 'HyperView session'}</h2><p>{filmCount} films · {durationMinutes} minutes</p></div></div>
         <div className="order-summary__detail"><CalendarDays size={18} /><div><small>Date</small><strong>{formatShowing(screening.starts_at, screening.venue.timezone, { dateStyle: 'full' })}</strong></div></div>
         <div className="order-summary__detail"><Clock3 size={18} /><div><small>Time</small><strong>{formatShowing(screening.starts_at, screening.venue.timezone, { timeStyle: 'short' })}</strong></div></div>
         <div className="order-summary__detail"><MapPin size={18} /><div><small>Venue</small><strong>{screening.venue.name}, {screening.venue.city}</strong></div></div><div className="order-summary__line" />
-        <div className="order-summary__items"><div><span>{quantity} × Session admission</span><strong>{formatKobo(totalKobo)}</strong></div></div>
+        <div className="order-summary__items"><div><span>{isGroup ? '15-person group package' : `${quantity} × Session admission`}</span><strong>{formatKobo(totalKobo)}</strong></div></div>
         <div className="order-summary__total"><span>Total</span><strong>{formatKobo(totalKobo)}</strong></div><div className="order-summary__total order-summary__total--paid"><span>Full payment due now</span><strong>{formatKobo(totalKobo)}</strong></div>
         <p className="order-summary__fees"><Info size={14} /> Arrive 15 minutes early. Price and capacity are confirmed by the server.</p>{message && <p className="booking-error" role="alert">{message}</p>}
         <button className="ticket-button ticket-button--pay" disabled={submitting || !ticket}><LockKeyhole size={17} /> {submitting ? 'Opening Paystack…' : 'Continue to secure payment'}</button><p className="order-summary__secure"><ShieldCheck size={16} /> Secure checkout powered by Paystack</p>

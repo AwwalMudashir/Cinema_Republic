@@ -1,8 +1,8 @@
 # Cinema57 Supabase backend and ticketing guide
 
-This guide is the implementation blueprint for the React and Supabase booking system. The current product is **session-only HyperView 9D Flying Cinema booking**: customers choose a date, time and number of admissions, pay for that 30-minute session, receive a booking confirmation, register at reception, and are then admitted by a supervisor. Customers do not choose movies. Staff select and play two 15-minute films during the visit.
+This guide is the implementation blueprint for the React and Supabase booking system. The current product is **session-only HyperView 9D Flying Cinema booking**. Customers choose either a 30-minute individual session for 1–15 guests or an exclusive 45-minute package for exactly 15 guests. Customers do not choose movies: staff select two 15-minute films for an individual session or three 15-minute films for a group session.
 
-> **Current-schema note (4 November 2026):** migration `20261104130000_session_only_booking.sql` supersedes the movie-selection and group-package instructions retained later in this document as historical schema context. New records use `screenings.movie_id = null`; the old `movies` table remains only so existing audit/payment history is not destroyed.
+> **Current-schema note (5 November 2026):** migrations `20261104130000_session_only_booking.sql` and `20261105090000_group_session_packages.sql` supersede the movie-selection instructions retained later in this document as historical schema context. New records use `screenings.movie_id = null`; the old `movies` table remains only so existing audit/payment history is not destroyed.
 
 The public Sessions page reads future `on_sale` session records directly from Supabase, including a coming-soon preview before ticket sales open. The payment, ticket and staff flows are implemented locally but are **not live** until the migrations and Edge Functions are deployed, DNS/secrets are set, and Paystack test payments have passed. Do not accept real payments before the full test checklist passes.
 
@@ -37,12 +37,13 @@ The original secure payment foundation remains in place. Two later migrations ex
 - `20261019091000_hyperview_session_booking.sql`
 - `20261104120000_session_pricing_and_group_packages.sql`
 - `20261104130000_session_only_booking.sql`
+- `20261105090000_group_session_packages.sql`
 
-The last migration establishes the current product: movie-free sessions, a database-enforced 30-minute duration, session-only checkout, server-priced admission, session-safe public/ticket/staff queries and bulk session generation. The preceding migration is still applied because it introduced the pricing-rule foundation; its group-package endpoints are not exposed by the current UI and public execution is revoked.
+The last two migrations establish the current product: movie-free sessions, database-enforced 30/45-minute durations, server-priced individual and group checkout, session-safe public/ticket/staff queries and bulk session generation. The older movie-based group itinerary remains only for historical compatibility and is not exposed by the current UI.
 
-Business weekdays are Monday–Thursday and weekends are Friday–Sunday. Per-person prices are configured in the admin Pricing screen. The selected session date is interpreted in the venue timezone (`Africa/Lagos`). An active pricing rule selected directly on a session overrides the automatic effective venue/global rule. Do not reintroduce browser-authoritative pricing.
+Business weekdays are Monday–Thursday and weekends are Friday–Sunday. Each pricing rule contains individual per-person prices and exclusive 15-person group totals for both day bands. The selected session date is interpreted in the venue timezone (`Africa/Lagos`). An active pricing rule selected directly on a session overrides the automatic effective venue/global rule. Do not reintroduce browser-authoritative pricing.
 
-Current operational rules are also enforced by Postgres: every new session is exactly 30 minutes, one venue cannot have overlapping active sessions, and capacity belongs to that specific date/time. The public site and checkout only read rows where `movie_id is null`. A single online checkout currently accepts 1–15 admissions and can never exceed the session's remaining capacity. The 15-admission checkout ceiling is an anti-abuse/operational limit, not a group-film package, and can be changed later if the business approves a different maximum.
+Current operational rules are also enforced by Postgres: individual sessions are exactly 30 minutes and accept 1–15 admissions up to their configured capacity; group sessions are exactly 45 minutes, have a locked capacity of 15 and accept only one 15-person package. One venue cannot have overlapping active sessions. A group payment is the configured package total, not a per-person price multiplied by 15. One group hold or paid order fills the session. The public site and checkout only read rows where `movie_id is null`.
 
 After applying the migrations, redeploy the Functions whose session, confirmation, email or staff payloads changed:
 
@@ -63,10 +64,10 @@ npx.cmd supabase functions deploy admin-catalogue
 
 ## What the customer flow will do
 
-1. The customer selects one available 30-minute session and an admission quantity.
+1. The customer selects an available individual or group session. Individual checkout chooses 1–15 admissions; group checkout is fixed at exactly 15 guests.
 2. They provide a name, phone number and email address.
 3. They accept the session-only, 15-minute-early, non-refundable and no-rescheduling policy.
-4. The backend calculates the Monday–Thursday or Friday–Sunday per-person price from the session-selected rule (or automatic effective fallback) and creates a ten-minute capacity hold.
+4. The backend calculates the correct Monday–Thursday or Friday–Sunday price from the session-selected rule (or automatic effective fallback). Individual sessions charge per guest; group sessions charge one package total. It then creates a ten-minute capacity hold.
 5. Paystack collects the full payment.
 6. A verified Paystack webhook changes the order to `paid` and creates one internal admission per guest.
 7. Resend sends one booking confirmation and booking QR containing the reference, session, party size, total, validity and arrival instructions.
@@ -696,7 +697,7 @@ Routes (one shared staff login):
 Admin capabilities:
 
 - Create venues and sessions, including a bulk date-range/session-time generator.
-- Configure per-person prices for Monday–Thursday and Friday–Sunday, optionally assign a promotional pricing rule to a session, and configure session capacity.
+- Configure individual per-person prices and exclusive 15-person group totals for Monday–Thursday and Friday–Sunday. Optionally assign a promotional pricing rule to a session and configure individual-session capacity.
 - Pause sales or cancel sessions. Full, in-progress and completed states are automatic.
 - Search by order reference, customer email or ticket public ID.
 - View payment and email-delivery status.
@@ -717,7 +718,7 @@ Keep manual redemption as the safe default. An optional high-volume “scan and 
 
 Never hard-delete paid orders, payments or tickets from the admin UI. Use statuses so there is an audit history. After tickets have sold, the database blocks rescheduling or moving a screening and blocks reducing a ticket tier below paid/live-reserved capacity. Cancelling a screening invalidates tickets but **does not automatically refund customers**; process the refund separately in Paystack.
 
-HyperView uses one **Session admission** inventory per session. Capacity is the total number of people who can purchase that date/time. Every purchased admission consumes one place. Inventory is temporarily unavailable when paid admissions plus live pending checkout holds reach capacity. The session becomes `sold_out` automatically, becomes `in_progress` at `starts_at`, and becomes `completed` after its database-enforced 30-minute end time.
+HyperView uses one admission inventory per session. For individual sessions, capacity is the total number of people who can purchase that 30-minute date/time and each admission consumes one place. Group sessions are exclusive 45-minute products with capacity locked to 15; the only valid checkout reserves all 15 places and includes three staff-selected films. Inventory is temporarily unavailable when paid admissions plus live pending checkout holds reach capacity. A session becomes `sold_out` automatically, becomes `in_progress` at `starts_at`, and becomes `completed` after its database-enforced end time.
 
 Migration `20260916130000_screening_inventory.sql` adds the public remaining-count RPC and `sync_screening_sold_out_status()`. It runs the sync once immediately and schedules `sync-screening-inventory` every minute if Supabase Cron is already enabled. After `db push`, verify this job in **Dashboard → Integrations → Cron → Jobs**. If absent, enable Cron and create a SQL job named `sync-screening-inventory` with schedule `* * * * *` and command `select public.sync_screening_sold_out_status();`. Pending holds are intentionally excluded from the persisted `sold_out` status so abandoned checkouts cannot permanently close a screening. The public remaining count includes live holds. Raising a tier's capacity or a full refund can automatically reopen a sold-out screening at the next sync, provided the sales window is still open.
 

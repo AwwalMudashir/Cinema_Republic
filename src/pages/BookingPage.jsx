@@ -22,6 +22,9 @@ export default function BookingPage() {
     ? 'expired' : data?.status;
   const presentable = status === 'paid';
   const sessionTitle = data?.session?.title || data?.movie?.title || 'HyperView 9D Flying Cinema Session';
+  const isGroup = data?.booking_type === 'group' || data?.session?.kind === 'group';
+  const durationMinutes = Number(data?.session?.duration_minutes || (isGroup ? 45 : 30));
+  const filmCount = Number(data?.session?.film_count || data?.experience_count || (isGroup ? 3 : 2));
 
   return <main className="flow-page booking-confirmation-page">
     <section className="flow-hero ticket-shell"><p className="ticket-kicker"><Ticket size={16} /> HyperView 9D Flying Cinema</p>
@@ -32,13 +35,13 @@ export default function BookingPage() {
       {state.error && <article className="flow-card"><TriangleAlert size={32} /><h2>Booking unavailable</h2><p role="alert">{state.error}</p><Link to="/sessions" className="ticket-button ticket-button--primary">Browse sessions</Link></article>}
       {data && <article className="booking-confirmation">
         <div className="booking-confirmation__art booking-confirmation__art--session"><Ticket size={58} aria-hidden="true" />
-          <div><p className="ticket-kicker">Paid session</p><h2>{sessionTitle}</h2><p>30 minutes · two staff-selected 15-minute films<br />{data.screening.venue}, {data.screening.venue_city}</p></div></div>
+          <div><p className="ticket-kicker">{isGroup ? 'Paid group package' : 'Paid session'}</p><h2>{sessionTitle}</h2><p>{durationMinutes} minutes · {filmCount} staff-selected 15-minute films<br />{data.screening.venue}, {data.screening.venue_city}</p></div></div>
         <div className="booking-confirmation__body"><div className="booking-confirmation__heading"><div><small>Booking reference</small><strong>{data.reference}</strong></div>
           <span className={`ticket-state ticket-state--${status}`}>{status === 'paid' ? 'Confirmed' : String(status).replaceAll('_', ' ')}</span></div>
           <div className="booking-confirmation__facts">
             <p><CalendarDays size={19} /><span><small>Date</small><strong>{formatShowing(data.screening.starts_at, zone, { dateStyle: 'full' })}</strong></span></p>
             <p><Clock3 size={19} /><span><small>Session time</small><strong>{formatShowing(data.screening.starts_at, zone, { timeStyle: 'short' })}</strong></span></p>
-            <p><Users size={19} /><span><small>Guests</small><strong>{data.quantity}</strong></span></p>
+            <p><Users size={19} /><span><small>Guests</small><strong>{data.quantity}{isGroup ? ' · exclusive group' : ''}</strong></span></p>
             <p><Ticket size={19} /><span><small>Total paid</small><strong>{formatKobo(data.amount_kobo)}</strong></span></p>
             <p className="booking-confirmation__wide"><MapPin size={19} /><span><small>Venue</small><strong>{data.screening.venue}, {data.screening.venue_address}, {data.screening.venue_city}</strong></span></p>
           </div>

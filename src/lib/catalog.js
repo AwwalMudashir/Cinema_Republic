@@ -45,7 +45,7 @@ export async function loadSessionProgramme() {
   const { data, error } = await runCatalogueQuery(supabase
     .from('screenings')
     .select(`
-      id, session_name, status, starts_at, ends_at, sales_start, sales_end,
+      id, session_name, session_kind, status, starts_at, ends_at, sales_start, sales_end,
       admission_opens_minutes, admission_grace_minutes,
       venue:venues!inner(id, name, address, city, country, timezone, is_active),
       ticket_types(id, name, description, price_kobo, capacity, is_active)
@@ -75,6 +75,9 @@ export async function loadSessionProgramme() {
     return {
       ...row,
       title: row.session_name || 'HyperView 9D Flying Cinema Session',
+      sessionKind: row.session_kind || 'individual',
+      durationMinutes: row.session_kind === 'group' ? 45 : 30,
+      filmCount: row.session_kind === 'group' ? 3 : 2,
       venue: row.venue,
       ticketTypes,
       isBookable: salesOpen,

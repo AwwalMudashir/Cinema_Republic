@@ -191,6 +191,7 @@
 .quantity-control button { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid rgba(13,27,42,.14); border-radius: 50%; color: var(--ticket-ink); background: #f7f7f3; cursor: pointer; }
 .quantity-control button:disabled { opacity: .35; cursor: not-allowed; }
 .quantity-control span { font-size: .8rem; font-weight: 700; }
+.quantity-control--fixed { display: flex; min-width: 94px; justify-content: center; padding: 8px 12px; border: 1px solid rgba(13,27,42,.14); border-radius: 999px; background: #f7f7f3; }
 .customer-fields { display: grid; grid-template-columns: repeat(2,1fr); gap: 17px; }
 .field { display: grid; gap: 8px; color: var(--ticket-ink); font: 600 .72rem 'Poppins',sans-serif; }
 .field--wide { grid-column: 1/-1; }

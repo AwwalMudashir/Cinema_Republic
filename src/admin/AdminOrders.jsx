@@ -60,7 +60,7 @@ export default function AdminOrders() {
             {order.refund && <p className="admin-help">Latest Paystack refund event: {order.refund.status} · {formatKobo(order.refund.amount_kobo)}. A partial refund requires manual review.</p>}
             <h3>Purchased items</h3>{order.items?.map((item, index) => <p className="admin-order-item" key={`${item.type}-${index}`}>
               <span>{item.quantity} × {item.type} · {item.session || item.movie}<small>{formatShowing(item.showtime, 'Africa/Lagos', { dateStyle: 'medium', timeStyle: 'short' })} · {item.venue}</small></span>
-              <strong>{item.included ? 'Included' : `${formatKobo(item.unit_price_kobo)} each`}</strong></p>)}
+              <strong>{item.included ? 'Included' : item.package_total ? `${formatKobo(item.unit_price_kobo)} package total` : `${formatKobo(item.unit_price_kobo)} each`}</strong></p>)}
             {order.tickets?.length > 0 && <><h3>Tickets</h3><div className="admin-ticket-links">{order.tickets.map((ticket) =>
               <Link key={ticket.public_id} to={`/ticket/${ticket.public_id}`}><Ticket size={15} /> {ticket.public_id} · {ticket.status}</Link>)}</div></>}
             {order.email?.last_error && <p className="admin-error">Email error: {order.email.last_error}</p>}

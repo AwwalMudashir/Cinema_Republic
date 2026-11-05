@@ -48,6 +48,9 @@ export default function PaymentCallback() {
 
   const paid = state.status === 'paid';
   const support = state.status === 'payment_review' || state.requiresSupport;
+  const isGroup = state.booking_type === 'group';
+  const durationMinutes = Number(state.duration_minutes || (isGroup ? 45 : 30));
+  const filmCount = Number(state.experience_count || (isGroup ? 3 : 2));
   return (
     <main className="flow-page">
       <section className="flow-hero ticket-shell">
@@ -72,7 +75,7 @@ export default function PaymentCallback() {
           {state.error && <p className="flow-warning" role="alert">{state.error}</p>}
           {paid && <><div className="callback-booking-summary">
             <p><strong>{state.session_title || 'HyperView 9D Flying Cinema Session'}</strong></p><p>{state.quantity} guest{state.quantity === 1 ? '' : 's'} · {state.venue_name}, {state.venue_city}</p>
-            <p>30 minutes with two 15-minute films selected by staff. Arrive at least 15 minutes before your session. The booking is non-refundable and cannot be rescheduled.</p>
+            <p>{durationMinutes} minutes with {filmCount} staff-selected 15-minute films{isGroup ? ' for an exclusive group of 15' : ''}. Arrive at least 15 minutes before your session. The booking is non-refundable and cannot be rescheduled.</p>
           </div>
             {state.booking_public_id && <Link className="ticket-button ticket-button--primary" to={`/booking/${state.booking_public_id}`}><TicketCheck size={21} /> Open booking confirmation</Link>}</>}
           {!state.loading && !paid && <Link className="ticket-button ticket-button--primary" to="/sessions">Browse sessions</Link>}

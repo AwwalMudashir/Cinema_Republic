@@ -19,8 +19,8 @@ const MovieSneakPeek = () => {
           </div>
           <div className="ticket-preview__copy">
             <p>
-              Choose an available 30-minute session. Each guest enjoys two
-              immersive 15-minute films coordinated by staff at the centre.
+              Choose individual admission or reserve an exclusive 45-minute
+              session for a group of exactly 15 guests.
             </p>
             <Link to="/sessions" className="ticket-text-link">
               Browse available sessions <ArrowRight size={18} />
@@ -30,11 +30,11 @@ const MovieSneakPeek = () => {
 
         <div className="ticket-preview__grid">
           {sessions.slice(0, 3).map((session) => <article className="ticket-preview-session" key={session.id}>
-            <p>{session.isBookable ? 'Booking open' : session.isComingSoon ? 'Coming soon' : 'Full'}</p>
+            <p>{session.isBookable ? session.sessionKind === 'group' ? '15-person group package' : 'Booking open' : session.isComingSoon ? 'Coming soon' : 'Full'}</p>
             <h3>{formatShowing(session.starts_at, session.venue.timezone, { weekday: 'long', day: 'numeric', month: 'short' })}</h3>
-            <span><Clock3 size={15} /> {formatShowing(session.starts_at, session.venue.timezone, { timeStyle: 'short' })} · 30 minutes</span>
+            <span><Clock3 size={15} /> {formatShowing(session.starts_at, session.venue.timezone, { timeStyle: 'short' })} · {session.durationMinutes} minutes · {session.filmCount} films</span>
             <span><MapPin size={15} /> {session.venue.name}, {session.venue.city}</span>
-            {session.ticketTypes[0] && <strong>{formatKobo(session.ticketTypes[0].price_kobo)} per person</strong>}
+            {session.ticketTypes[0] && <strong>{formatKobo(session.ticketTypes[0].price_kobo)} {session.sessionKind === 'group' ? 'group total' : 'per person'}</strong>}
             {session.isBookable && <Link to={`/sessions/${session.id}`}><CalendarDays size={16} /> Book this session</Link>}
           </article>)}
           {loading && <p className="programme-feedback">Loading upcoming sessions…</p>}

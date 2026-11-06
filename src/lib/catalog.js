@@ -55,7 +55,8 @@ export async function loadAdmissionProducts() {
   return (Array.isArray(data) ? data : []).map((item) => ({
     ...item,
     individual_price_kobo: Number(item.individual_price_kobo),
-    group_price_kobo: Number(item.group_price_kobo),
+    group_price_kobo: item.group_price_kobo == null ? null : Number(item.group_price_kobo),
+    group_available: item.group_available === true && Number(item.group_price_kobo) > 0,
   }));
 }
 

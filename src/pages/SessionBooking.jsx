@@ -54,6 +54,7 @@ export default function SessionBooking() {
   if (loading) return <PageState title="Preparing today’s ticket…" message="Confirming the current price and expiry window." />;
   if (error) return <PageState title="Online admission is unavailable" message={error} />;
   if (!product) return <PageState title="Online admission is unavailable" message="No active venue or price is configured right now." />;
+  if (isGroup && !product.group_available) return <PageState title="Group booking is temporarily unavailable" message="The 15-person group price is still being configured. Individual tickets remain available." />;
 
   return <main className="booking-page flex-checkout-page"><section className="booking-cover session-booking-cover"><img src={hyperViewLive.photos[0].src} alt="" /><div className="booking-cover__veil" />
     <div className="ticket-shell booking-cover__content"><Link to="/tickets" className="booking-back"><ArrowLeft size={17} /> All tickets</Link><div><p className="ticket-kicker">HyperView flexible admission</p>

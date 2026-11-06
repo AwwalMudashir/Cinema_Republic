@@ -35,8 +35,10 @@ export default function Sessions() {
           <p>Each ticket admits one person once at any operating session before the current window expires.</p><strong>{formatKobo(product.individual_price_kobo)} <small>per person</small></strong>
           <div className="flex-validity-note"><CalendarRange size={18} /><span>{validityCopy(product)}</span></div><Link className="ticket-button ticket-button--primary" to={`/tickets/individual?venue=${product.venue_id}`}>Buy individual tickets <ArrowRight size={17} /></Link></article>
           <article className="flex-product-card flex-product-card--group"><div className="flex-product-card__icon"><UsersRound size={28} /></div><p className="ticket-kicker ticket-kicker--dark">Group package</p><h3>Exactly 15 guests</h3>
-            <p>One group visit for 15 people, with three staff-selected films. The group attends together during the validity window.</p><strong>{formatKobo(product.group_price_kobo)} <small>total</small></strong>
-            <div className="flex-validity-note"><CalendarRange size={18} /><span>{validityCopy(product)}</span></div><Link className="ticket-button ticket-button--primary" to={`/tickets/group?venue=${product.venue_id}`}>Buy group package <ArrowRight size={17} /></Link></article></div></div>)}
+            <p>One group visit for 15 people, with three staff-selected films. The group attends together during the validity window.</p><strong>{product.group_available ? formatKobo(product.group_price_kobo) : 'Price being configured'} {product.group_available && <small>total</small>}</strong>
+            <div className="flex-validity-note"><CalendarRange size={18} /><span>{validityCopy(product)}</span></div>{product.group_available
+              ? <Link className="ticket-button ticket-button--primary" to={`/tickets/group?venue=${product.venue_id}`}>Buy group package <ArrowRight size={17} /></Link>
+              : <span className="ticket-button ticket-button--unavailable" aria-disabled="true">Group booking temporarily unavailable</span>}</article></div></div>)}
     </div></section>
     <section className="booking-steps"><div className="ticket-shell"><div className="booking-steps__heading"><p className="ticket-kicker"><ShieldCheck size={16} /> Know before paying</p><h2>Flexible timing, clear boundaries.</h2></div>
       <div className="booking-steps__grid"><article><span>01</span><h3>Buy in the current band</h3><p>Monday–Thursday tickets expire Thursday night. Friday–Sunday tickets expire Sunday night.</p></article>

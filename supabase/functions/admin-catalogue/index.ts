@@ -29,6 +29,12 @@ function blockedMessage(action: string, result: DeleteResult): string {
   const bookings = Number(result.customer_booking_count ?? 0);
   const tickets = Number(result.ticket_count ?? 0);
 
+  if (result.reason === "active_pricing_rule") {
+    return `${title} is active and may currently control customer prices. Create or activate its replacement, then edit this rule and turn it off before deleting it.`;
+  }
+  if (result.reason === "pricing_rule_in_use") {
+    return `${title} cannot be deleted because ${plural(sessions, "historical session")} still references it. Keep the rule inactive so payment and catalogue history remain intact.`;
+  }
   if (result.reason === "sessions_exist") {
     return `${title} cannot be deleted because it still has ${plural(sessions, "session")}. `
       + "Open Sessions and delete each unused session first. If a session has any checkout or booking history, archive the movie instead.";
@@ -60,24 +66,31 @@ export default {
       }
       const input = body as Record<string, unknown>;
       const action = input.action;
-      if (action !== "delete_movie" && action !== "delete_screening") {
+      if (action !== "delete_movie" && action !== "delete_screening" && action !== "delete_pricing_rule") {
         throw new HttpError(400, "invalid_action", "Unknown catalogue action");
       }
 
-      const entityId = action === "delete_movie" ? input.movie_id : input.screening_id;
+      const entityId = action === "delete_movie"
+        ? input.movie_id
+        : action === "delete_screening" ? input.screening_id : input.pricing_rule_id;
       if (typeof entityId !== "string" || !UUID.test(entityId)) {
-        throw new HttpError(400, "invalid_entity", "Select a valid movie or session");
+        throw new HttpError(400, "invalid_entity", "Select a valid catalogue item");
       }
 
       const actor = await requireAdmin(request, `catalogue:${action}`);
       const admin = getAdminClient();
-      const rpc = action === "delete_movie" ? "admin_delete_movie" : "admin_delete_screening";
+      const rpc = action === "delete_movie"
+        ? "admin_delete_movie"
+        : action === "delete_screening" ? "admin_delete_screening" : "admin_delete_pricing_rule";
       const parameters = action === "delete_movie"
         ? { p_actor: actor, p_movie_id: entityId }
-        : { p_actor: actor, p_screening_id: entityId };
+        : action === "delete_screening"
+        ? { p_actor: actor, p_screening_id: entityId }
+        : { p_actor: actor, p_pricing_rule_id: entityId };
       const { data, error } = await admin.rpc(rpc, parameters);
 
-      if (error?.message.includes("MOVIE_NOT_FOUND") || error?.message.includes("SCREENING_NOT_FOUND")) {
+      if (error?.message.includes("MOVIE_NOT_FOUND") || error?.message.includes("SCREENING_NOT_FOUND")
+        || error?.message.includes("PRICING_RULE_NOT_FOUND")) {
         throw new HttpError(404, "not_found", "This item no longer exists");
       }
       if (error?.message.includes("ADMIN_FORBIDDEN")) {

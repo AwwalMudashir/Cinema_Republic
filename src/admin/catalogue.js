@@ -8,7 +8,7 @@ export function assertResult({ data, error }) {
       CAPACITY_BELOW_RESERVED: 'Capacity cannot be lower than the number of paid or currently reserved tickets.',
       TICKET_TYPE_SCREENING_IMMUTABLE: 'Admission capacity cannot be moved to another session.',
       SESSION_TIME_OVERLAP: 'This time overlaps another active session at the venue. Choose a start time after the existing session ends.',
-      GROUP_PRICE_NOT_CONFIGURED: 'Add both Monday–Thursday and Friday–Sunday group totals to the selected pricing rule before creating a group session.',
+      GROUP_PRICE_NOT_CONFIGURED: 'Add both Monday–Thursday and Friday–Sunday 15-person group totals to the active pricing rule.',
     };
     const code = Object.keys(messages).find((key) => error.message.includes(key));
     throw new Error(code ? messages[code] : error.message);

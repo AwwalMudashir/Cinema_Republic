@@ -210,6 +210,8 @@
 .flex-product-card>strong { margin:24px 0 15px; color:#102231; font-size:1.55rem; }
 .flex-product-card>strong small { color:rgba(16,34,49,.52); font-size:.7rem; font-weight:600; }
 .flex-product-card .ticket-button { margin-top:auto; }
+.ticket-button--unavailable { cursor:not-allowed; opacity:.62; justify-content:center; background:#d8d4cc; color:#4b4945; }
+.ticket-preview-session__unavailable { display:inline-flex; width:max-content; padding:9px 12px; border-radius:999px; color:#6d6254; background:#f0ece4; font-size:.7rem; font-weight:700; }
 .flex-validity-note { display:flex; gap:10px; margin:0 0 24px; padding:14px; border-radius:12px; color:#70491e; background:#fff3df; font-size:.73rem; line-height:1.55; }
 .flex-validity-note svg { flex:none; }
 .flex-expiry-panel { background:linear-gradient(145deg,#fff,#fff9ed); }

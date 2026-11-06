@@ -1,6 +1,6 @@
 import {
-  ArrowRight, ArrowUpRight, BadgeDollarSign, CheckCircle2,
-  CreditCard, MapPin, ReceiptText, ScanLine, Tags, UserCheck, UsersRound,
+  ArrowRight, ArrowUpRight, BadgeDollarSign,
+  CreditCard, MapPin, ReceiptText, ScanLine, UserCheck, UsersRound,
 } from 'lucide-react';
 import { createElement } from 'react';
 import { Link } from 'react-router-dom';
@@ -16,11 +16,10 @@ const cards = [
 ];
 
 const lifecycle = [
-  { title: 'Set pricing', copy: 'Add individual rates and group totals for both day bands.', icon: BadgeDollarSign },
-  { title: 'Sell flexible tickets', copy: 'Customers choose individual or group admission without selecting a time.', icon: CreditCard },
-  { title: 'Validity window', copy: 'Tickets expire at the end of the current Mon–Thu or Fri–Sun band.', icon: CheckCircle2 },
-  { title: 'Reception', copy: 'Confirm the booking, register arrival and issue physical tags.', icon: Tags },
-  { title: 'Admit & complete', copy: 'Redeem each admission once; used tickets cannot be presented again.', icon: CheckCircle2 },
+  { title: 'Prepare the offer', copy: 'Keep the venue active and set individual and group prices for both day bands.', icon: BadgeDollarSign },
+  { title: 'Customer pays online', copy: 'Paystack confirms a one-use flexible ticket and its Thursday or Sunday expiry.', icon: CreditCard },
+  { title: 'Reception registers', copy: 'Find the paid booking, register the party and issue physical identification tags.', icon: UserCheck },
+  { title: 'Verify and admit', copy: 'Check validity at the gate, then redeem each admission once as the guest enters.', icon: ScanLine },
 ];
 
 export default function AdminHome() {
@@ -28,8 +27,8 @@ export default function AdminHome() {
   return <main className="admin-content"><div className="admin-page-header"><p className="admin-overline">Operations overview</p>
     <h1>Good to have you here{profile.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}.</h1>
     <p>Choose a workspace to keep the next cinema night running smoothly.</p></div>
-    <section className="admin-lifecycle" aria-labelledby="show-lifecycle-title">
-      <div className="admin-lifecycle__heading"><div><p className="admin-overline">Ticket lifecycle</p><h2 id="show-lifecycle-title">From pricing to one-time admission</h2></div>
+    <section className="admin-lifecycle" aria-labelledby="ticket-lifecycle-title">
+      <div className="admin-lifecycle__heading"><div><p className="admin-overline">Ticket lifecycle</p><h2 id="ticket-lifecycle-title">From pricing to one-time admission</h2></div>
         <p>Customers buy one-use admission for any operating session inside the current validity window.</p></div>
       <div className="admin-lifecycle__steps">{lifecycle.map(({ title, copy, icon }, index) => <div className="admin-lifecycle-step" key={title}>
         <div className="admin-lifecycle-step__top"><span>{createElement(icon, { size: 19 })}</span><small>{String(index + 1).padStart(2, '0')}</small></div>
